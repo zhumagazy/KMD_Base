@@ -1,0 +1,43 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}Мои тесты{% endblock %}
+{% block content %}
+<div class="page-head"><div class="titles"><h1 class="large-title">Мои тесты</h1></div></div>
+
+<div class="section-label">Доступные</div>
+{% if active %}
+<div class="list">{% for a in active %}{% include "includes/assignment_row.html" %}{% endfor %}</div>
+{% else %}
+<div class="card empty">{% icon "checklist" %}<div class="empty-title">Нет назначенных тестов</div>Новые тесты появятся здесь, когда администратор откроет к ним доступ.</div>
+{% endif %}
+
+<div class="section">
+  <div class="section-label">Сданные</div>
+  {% if finished %}
+  <div class="list">
+    {% for att in finished %}
+    <a class="row with-icon" href="{% url 'attempt_done' att.pk %}">
+      <span class="tile {% if att.result_visible_to_user %}{% if att.passed %}green{% else %}red{% endif %}{% else %}gray{% endif %}">{% icon "checkmark" %}</span>
+      <div class="grow"><div class="row-title">{{ att.test.title }}</div><div class="row-sub">{{ att.finished_at|date:"d.m.Y H:i" }}{% if att.status == "timed_out" %} · время вышло{% endif %}</div></div>
+      {% if att.result_visible_to_user %}
+        <span class="badge {% if att.passed %}green{% else %}red{% endif %}">{{ att.percent|floatformat:0 }}%</span>
+      {% elif att.test.show_results and att.needs_review %}
+        <span class="badge orange">На проверке</span>
+      {% else %}
+        <span class="badge">Отправлен</span>
+      {% endif %}
+      {% icon "chevron.right" "sm chev" %}
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card empty">Вы ещё не сдавали тесты.</div>
+  {% endif %}
+</div>
+
+{% if expired %}
+<div class="section">
+  <div class="section-label">Срок истёк</div>
+  <div class="list">{% for a in expired %}{% include "includes/assignment_row.html" %}{% endfor %}</div>
+</div>
+{% endif %}
+{% endblock %}

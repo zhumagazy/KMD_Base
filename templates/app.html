@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load kmd %}
+{% block body %}
+<div class="app">
+  <aside class="sidebar" aria-label="Главное меню">
+    <a class="brand" href="{% url 'home' %}">
+      <span class="brand-mark">KMD</span>
+      <span><span class="brand-name">KMD Base</span><br><span class="brand-sub">{% if user.is_admin %}Администрирование{% else %}База знаний{% endif %}</span></span>
+    </a>
+    <nav class="nav">
+      {% for item in nav_items %}
+      <a href="{% url item.url %}" class="{% if item.active %}active{% endif %}">{% icon item.icon %}<span>{{ item.label }}</span></a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-foot">
+      <div class="me">
+        <span class="avatar">{{ user.initials }}</span>
+        <div><div class="me-name">{{ user.get_short_name }} {{ user.last_name }}</div><div class="me-role">{{ user.kind_label }}</div></div>
+      </div>
+      <div class="me-actions">
+        <a class="btn plain sm" href="{% url 'password_change' %}">{% icon "key" "sm" %}Пароль</a>
+        <form class="inline-form" method="post" action="{% url 'logout' %}" style="flex:1;display:flex">{% csrf_token %}
+          <button class="btn plain sm" style="flex:1" type="submit">{% icon "logout" "sm" %}Выйти</button>
+        </form>
+      </div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="mobile-head">
+      <a class="brand" href="{% url 'home' %}" style="padding:0"><span class="brand-mark">KMD</span><span class="brand-name">KMD Base</span></a>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn plain sm" type="submit">Выйти</button></form>
+    </div>
+    <div class="content {% block content_class %}{% endblock %}">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+  <nav class="tabbar" aria-label="Меню">
+    {% for item in nav_items %}
+    <a href="{% url item.url %}" class="{% if item.active %}active{% endif %}">{% icon item.icon %}<span>{{ item.label }}</span></a>
+    {% endfor %}
+  </nav>
+</div>
+{% endblock %}

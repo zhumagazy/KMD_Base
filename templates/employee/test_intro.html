@@ -1,0 +1,37 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}{{ test.title }}{% endblock %}
+{% block content_class %}narrow{% endblock %}
+{% block content %}
+{% url 'my_tests' as back %}{% include "includes/back.html" with href=back label="Мои тесты" %}
+<div class="page-head"><div class="titles">
+  <h1 class="large-title">{{ test.title }}</h1>
+  {% if test.course %}<div class="subtitle">Курс «{{ test.course.title }}»</div>{% endif %}
+</div><span class="badge {{ a.state_color }}" style="font-size:13px;padding:4px 10px">{{ a.state_label }}</span></div>
+
+{% if test.description %}<div class="card pad article" style="font-size:16px;margin-bottom:24px">{{ test.description|linebreaks }}</div>{% endif %}
+
+<div class="section-label">Условия</div>
+<div class="card kv" style="margin-bottom:24px">
+  <div>Вопросов</div><div>{{ test.question_count }}</div>
+  <div>Время</div><div>{% if test.time_limit_minutes %}{{ test.time_limit_minutes }} мин{% else %}Без ограничения{% endif %}</div>
+  <div>Попыток осталось</div><div>{{ a.attempts_left }} из {{ a.attempts_allowed }}</div>
+  {% if a.available_from %}<div>Доступен с</div><div>{{ a.available_from|date:"d.m.Y H:i" }}</div>{% endif %}
+  {% if a.available_until %}<div>Доступен до</div><div>{{ a.available_until|date:"d.m.Y H:i" }}</div>{% endif %}
+  <div>Результат</div><div>{% if test.show_results %}Будет показан после сдачи{% else %}Увидит только администратор{% endif %}</div>
+</div>
+
+{% if a.state_code == "available" %}
+<div class="alert info">После начала запустится таймер{% if not test.time_limit_minutes %} (если он есть){% endif %}. Ответы сохраняются автоматически. Не закрывайте вкладку до отправки.</div>
+<form method="post" action="{% url 'test_start' a.pk %}">{% csrf_token %}<button class="btn lg block" type="submit">Начать тест</button></form>
+{% elif a.state_code == "in_progress" %}
+<form method="post" action="{% url 'test_start' a.pk %}">{% csrf_token %}<button class="btn lg block" type="submit">Продолжить тест</button></form>
+{% elif a.state_code == "locked" %}
+<div class="card empty">{% icon "lock" %}<div class="empty-title">Сначала изучите курс</div>Тест откроется после изучения всех материалов курса «{{ test.course.title }}».<div style="margin-top:14px"><a class="btn tinted" href="{% url 'course_detail' test.course_id %}">Перейти к курсу</a></div></div>
+{% elif a.state_code == "scheduled" %}
+<div class="card empty">{% icon "clock" %}<div class="empty-title">Тест ещё не начался</div>Он станет доступен {{ a.available_from|date:"d.m.Y в H:i" }}.</div>
+{% elif a.state_code == "done" %}
+<div class="card empty">{% icon "checkmark.circle" %}<div class="empty-title">Тест сдан</div>{% with last=a.last_finished_attempt %}{% if last %}<a href="{% url 'attempt_done' last.pk %}">Посмотреть статус</a>{% endif %}{% endwith %}</div>
+{% else %}
+<div class="card empty">{% icon "xmark.circle" %}<div class="empty-title">Тест недоступен</div>Обратитесь к администратору.</div>
+{% endif %}
+{% endblock %}

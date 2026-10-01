@@ -1,0 +1,41 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}{{ course.title }}{% endblock %}
+{% block content %}
+{% if course.group %}{% url 'manage:group_detail' course.group_id as back %}{% include "includes/back.html" with href=back label=course.group.title %}{% else %}{% url 'manage:course_list' as back %}{% include "includes/back.html" with href=back label="Курсы" %}{% endif %}
+<div class="page-head"><div class="titles"><h1 class="large-title">{{ course.title }}</h1>
+<div class="subtitle">{% if course.is_published %}<span class="badge green">Опубликован</span>{% else %}<span class="badge">Черновик — не виден сотрудникам</span>{% endif %}{% if course.description %} {{ course.description }}{% endif %}</div></div>
+<div class="actions">
+  <a class="btn gray" href="{% url 'course_detail' course.pk %}" target="_blank">{% icon "eye" "sm" %}Как видит сотрудник</a>
+  <a class="btn gray" href="{% url 'manage:course_edit' course.pk %}">{% icon "pencil" "sm" %}Изменить</a>
+  <a class="btn danger tinted" href="{% url 'manage:course_delete' course.pk %}">{% icon "trash" "sm" %}</a>
+</div></div>
+
+<div class="two-col">
+  <div>
+    <div class="section-head"><h2 class="section-title">Материалы</h2><a class="btn tinted sm" href="{% url 'manage:material_create' course.pk %}">{% icon "plus" "sm" %}Материал</a></div>
+    {% if materials %}
+    <div class="list">{% for m in materials %}
+      <a class="row with-icon" href="{% url 'manage:material_edit' m.pk %}">
+        <span class="tile {% if m.kind == 'video' %}red{% elif m.kind == 'file' %}orange{% elif m.kind == 'link' %}accent{% endif %}">{% if m.kind == 'video' %}{% icon "play" %}{% elif m.kind == 'file' %}{% icon "paperclip" %}{% elif m.kind == 'link' %}{% icon "link" %}{% else %}{% icon "doc" %}{% endif %}</span>
+        <div class="grow"><div class="row-title">{{ m.order }}. {{ m.title }}</div><div class="row-sub">{{ m.get_kind_display }} · обновлён {{ m.updated_at|date:"d.m.Y" }}</div></div>
+        {% icon "pencil" "sm chev" %}
+      </a>{% endfor %}</div>
+    {% else %}<div class="card empty">{% icon "doc" %}<div class="empty-title">Материалов нет</div>Добавьте статью, видео, файл или ссылку.</div>{% endif %}
+
+    <div class="section">
+      <div class="section-head"><h2 class="section-title">Тесты курса</h2><a class="btn tinted sm" href="{% url 'manage:test_create' %}?course={{ course.pk }}">{% icon "plus" "sm" %}Тест</a></div>
+      {% if tests %}<div class="list">{% for t in tests %}
+        <a class="row with-icon" href="{% url 'manage:test_detail' t.pk %}"><span class="tile blue">{% icon "checklist" %}</span><div class="grow"><div class="row-title">{{ t.title }}</div><div class="row-sub">{{ t.n_questions|plural:"вопрос,вопроса,вопросов" }}</div></div>{% icon "chevron.right" "sm chev" %}</a>
+      {% endfor %}</div>{% else %}<div class="card empty small">Тестов пока нет.</div>{% endif %}
+    </div>
+  </div>
+  <div>
+    <div class="section-head"><h2 class="section-title">Доступ к курсу</h2><a class="btn tinted sm" href="{% url 'manage:course_access' course.pk %}">Управлять</a></div>
+    {% include "includes/access_list.html" with accesses=accesses %}
+    {% if course.group %}
+    <div class="section-label" style="margin-top:20px">Через группу «{{ course.group.title }}»</div>
+    {% include "includes/access_list.html" with accesses=group_accesses %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

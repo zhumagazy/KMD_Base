@@ -1,0 +1,11 @@
+{% load kmd %}<a class="card course-card" href="{% url 'course_detail' c.pk %}">
+  <span class="tile{% if c.percent == 100 %} green{% endif %}">{% if c.percent == 100 %}{% icon "checkmark" %}{% else %}{% icon "book" %}{% endif %}</span>
+  <div class="title">{{ c.title }}</div>
+  {% if c.description %}<div class="desc">{{ c.description }}</div>{% endif %}
+  <div class="foot">
+    {% if c.n_materials %}
+    <div class="progress{% if c.percent == 100 %} green{% endif %}"><span style="width:{{ c.percent }}%"></span></div>
+    <span>{{ c.n_done }}/{{ c.n_materials }}</span>
+    {% else %}<span>Материалы скоро появятся</span>{% endif %}
+  </div>
+</a>

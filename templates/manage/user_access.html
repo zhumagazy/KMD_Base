@@ -1,0 +1,40 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}Доступы — {{ u }}{% endblock %}
+{% block content_class %}narrow{% endblock %}
+{% block content %}
+{% url 'manage:user_detail' u.pk as back %}{% include "includes/back.html" with href=back label=u.get_full_name %}
+<div class="page-head"><div class="titles"><h1 class="large-title">Доступы</h1><div class="subtitle">{{ u.get_full_name }} · {{ u.kind_label }}{% if not u.is_active %} · <span style="color:var(--red)">заблокирован — доступы не действуют, пока учётная запись неактивна</span>{% endif %}</div></div></div>
+<form method="post" class="form">{% csrf_token %}
+  <div class="section-label">Группы курсов — открывают все курсы группы</div>
+  <div class="list" style="margin-bottom:24px">
+    {% for g in groups %}
+    <label class="row with-icon"><input class="check" type="checkbox" name="groups" value="{{ g.pk }}"{% if g.pk in group_ids %} checked{% endif %}>
+      <div class="grow"><div class="row-title">{{ g.title }}</div><div class="row-sub">{% for c in g.courses.all %}{{ c.title }}{% if not forloop.last %}, {% endif %}{% empty %}курсов нет{% endfor %}</div></div></label>
+    {% empty %}<div class="row muted">Групп нет. <a href="{% url 'manage:group_create' %}">Создать</a></div>{% endfor %}
+  </div>
+
+  <div class="section-label">Отдельные курсы</div>
+  <div class="list" style="margin-bottom:24px">
+    {% for g in groups %}{% for c in g.courses.all %}
+    <label class="row"><input class="check" type="checkbox" name="courses" value="{{ c.pk }}"{% if c.pk in course_ids %} checked{% endif %}>
+      <div class="grow"><div class="row-title">{{ c.title }}</div><div class="row-sub">{{ g.title }}</div></div></label>
+    {% endfor %}{% endfor %}
+    {% for c in standalone %}
+    <label class="row"><input class="check" type="checkbox" name="courses" value="{{ c.pk }}"{% if c.pk in course_ids %} checked{% endif %}>
+      <div class="grow"><div class="row-title">{{ c.title }}</div><div class="row-sub">без группы</div></div></label>
+    {% endfor %}
+  </div>
+
+  <div class="section-label">Тесты — разовый доступ (1 попытка)</div>
+  <div class="list" style="margin-bottom:8px">
+    {% for t in tests %}
+    <label class="row"><input class="check" type="checkbox" name="tests" value="{{ t.pk }}"{% if t.pk in test_ids %} checked disabled{% endif %}>
+      <div class="grow"><div class="row-title">{{ t.title }}</div><div class="row-sub">{% if t.course %}{{ t.course.title }}{% else %}отдельный тест{% endif %}{% if t.time_limit_minutes %} · {{ t.time_limit_minutes }} мин{% endif %}</div></div>
+      {% if t.pk in test_ids %}<span class="badge blue">выдан</span>{% endif %}</label>
+    {% empty %}<div class="row muted">Активных тестов нет.</div>{% endfor %}
+  </div>
+  <p class="section-foot" style="margin-bottom:24px">Отозвать доступ к тесту, добавить попытки или задать окно времени можно на странице теста.</p>
+
+  <div class="form-actions"><a class="btn gray" href="{{ back }}">Отмена</a><button class="btn" type="submit">Сохранить доступы</button></div>
+</form>
+{% endblock %}

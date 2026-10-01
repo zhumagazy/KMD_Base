@@ -1,0 +1,22 @@
+{% load kmd %}<div class="list question">
+  <div class="question-head"><div class="grow">
+    <div class="q-num">Вопрос {{ forloop.counter }} · {% if q.answer.points is None %}на проверке{% else %}{{ q.answer.points|floatformat:"-2" }} из {{ q.points }}{% endif %}</div>
+    <div class="q-text">{{ q.text }}</div>
+  </div>
+  {% if q.answer.points is not None %}{% if q.answer.is_correct %}<span class="badge green">Верно</span>{% elif q.answer.points %}<span class="badge orange">Частично</span>{% else %}<span class="badge red">Неверно</span>{% endif %}{% endif %}
+  </div>
+  {% if q.image %}<img src="{{ q.image.url }}" alt="">{% endif %}
+  {% if q.is_text %}
+    <div class="row"><div class="grow" style="white-space:pre-line">{{ q.answer.text_answer|default:"— нет ответа —" }}</div></div>
+    {% if q.grade_field %}<div class="row"><label class="grow" for="{{ q.grade_field.id_for_label }}">{{ q.grade_field.label }}</label><div style="width:120px">{{ q.grade_field }}</div></div>{% if q.grade_field.errors %}<div class="row" style="color:var(--red)">{{ q.grade_field.errors|join:" " }}</div>{% endif %}{% endif %}
+  {% else %}
+    {% for c in q.ordered_choices %}
+    <div class="row">
+      {% if c.id in q.selected_ids %}{% if c.is_correct %}{% icon "checkmark.circle" "choice-correct" %}{% else %}{% icon "xmark.circle" "choice-wrong" %}{% endif %}{% elif c.is_correct %}{% icon "checkmark.circle" "choice-correct" %}{% else %}<span style="width:20px"></span>{% endif %}
+      <span class="grow{% if c.id in q.selected_ids %}" style="font-weight:600{% endif %}">{{ c.text }}</span>
+      {% if c.id in q.selected_ids %}<span class="muted small">выбрано</span>{% elif c.is_correct %}<span class="muted small">верный ответ</span>{% endif %}
+    </div>
+    {% endfor %}
+  {% endif %}
+  {% if q.explanation %}<div class="row"><div class="grow muted small">{{ q.explanation|linebreaksbr }}</div></div>{% endif %}
+</div>

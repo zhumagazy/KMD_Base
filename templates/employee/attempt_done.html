@@ -1,0 +1,30 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}{{ attempt.test.title }}{% endblock %}
+{% block content_class %}narrow{% endblock %}
+{% block content %}
+{% url 'my_tests' as back %}{% include "includes/back.html" with href=back label="Мои тесты" %}
+<div class="card result-hero">
+  {% if attempt.result_visible_to_user %}
+    <div class="ring {% if attempt.passed %}green{% else %}red{% endif %}">{% if attempt.passed %}{% icon "checkmark" %}{% else %}{% icon "xmark" %}{% endif %}</div>
+    <h1>{% if attempt.passed %}Тест сдан{% else %}Тест не сдан{% endif %}</h1>
+    <div class="score">{{ attempt.percent|floatformat:0 }}%</div>
+    <div class="muted">{{ attempt.score|floatformat:"-2" }} из {{ attempt.max_score|floatformat:"-2" }} баллов · проходной {{ attempt.test.pass_percent }}%</div>
+  {% else %}
+    <div class="ring">{% icon "checkmark" %}</div>
+    <h1>Ответы отправлены</h1>
+    <p class="muted" style="max-width:420px;margin:8px auto 0">
+      {% if attempt.test.show_results and attempt.needs_review %}Часть ответов проверяет администратор. Результат появится здесь после проверки.
+      {% else %}Спасибо! Результат теста доступен администратору.{% endif %}
+    </p>
+  {% endif %}
+  <div class="muted small" style="margin-top:16px">{{ attempt.test.title }} · {{ attempt.finished_at|date:"d.m.Y H:i" }}{% if attempt.status == "timed_out" %} · время вышло{% endif %}</div>
+</div>
+
+{% if questions %}
+<div class="section">
+  <div class="section-head"><h2 class="section-title">Разбор ответов</h2></div>
+  {% for q in questions %}{% include "includes/question_review.html" %}{% endfor %}
+</div>
+{% endif %}
+<div style="text-align:center;margin-top:24px"><a class="btn tinted" href="{% url 'home' %}">На главную</a></div>
+{% endblock %}

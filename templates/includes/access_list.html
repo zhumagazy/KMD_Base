@@ -1,0 +1,7 @@
+{% if accesses %}
+<div class="list">{% for a in accesses %}
+  <a class="row" href="{% url 'manage:user_detail' a.user_id %}"><span class="avatar">{{ a.user.initials }}</span>
+  <div class="grow"><div class="row-title">{{ a.user.get_full_name }}</div><div class="row-sub">{{ a.user.kind_label }}{% if a.expires_at %} · до {{ a.expires_at|date:"d.m.Y" }}{% endif %}</div></div>
+  {% if not a.is_active %}<span class="badge red">истёк</span>{% elif not a.user.is_active %}<span class="badge">неактивен</span>{% endif %}</a>
+{% endfor %}</div>
+{% else %}<div class="card empty small">Доступ ещё никому не выдан.</div>{% endif %}

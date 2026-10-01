@@ -1,0 +1,18 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}Тесты{% endblock %}
+{% block content %}
+<div class="page-head"><div class="titles"><h1 class="large-title">Тесты</h1><div class="subtitle">Составляйте тесты и выдавайте разовый доступ сотрудникам и кандидатам.</div></div>
+<a class="btn" href="{% url 'manage:test_create' %}">{% icon "plus" "sm" %}Новый тест</a></div>
+{% if tests %}
+<div class="list">{% for t in tests %}
+  <a class="row with-icon" href="{% url 'manage:test_detail' t.pk %}">
+    <span class="tile {% if t.is_active %}blue{% else %}gray{% endif %}">{% icon "checklist" %}</span>
+    <div class="grow"><div class="row-title">{{ t.title }}{% if not t.is_active %} <span class="badge">неактивен</span>{% endif %}</div>
+      <div class="row-sub">{{ t.n_questions|plural:"вопрос,вопроса,вопросов" }}{% if t.time_limit_minutes %} · {{ t.time_limit_minutes }} мин{% endif %}{% if t.course %} · {{ t.course.title }}{% endif %} · выдано {{ t.n_assigned }} · сдано {{ t.n_attempts }}</div></div>
+    {% if t.show_results %}<span class="badge brand">{% icon "eye" "sm" %}результат виден</span>{% else %}<span class="badge">{% icon "eye.slash" "sm" %}скрыт</span>{% endif %}
+    {% icon "chevron.right" "sm chev" %}
+  </a>{% endfor %}</div>
+{% else %}
+<div class="card empty">{% icon "checklist" %}<div class="empty-title">Тестов пока нет</div><div style="margin-top:14px"><a class="btn tinted" href="{% url 'manage:test_create' %}">Создать тест</a></div></div>
+{% endif %}
+{% endblock %}

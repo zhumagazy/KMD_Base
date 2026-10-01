@@ -1,0 +1,14 @@
+{% extends "app.html" %}
+{% block title %}Выдать доступ — {{ test.title }}{% endblock %}
+{% block content_class %}narrow{% endblock %}
+{% block content %}
+{% url 'manage:test_detail' test.pk as back %}{% include "includes/back.html" with href=back label=test.title %}
+<div class="page-head"><div class="titles"><h1 class="large-title">Разовый доступ к тесту</h1><div class="subtitle">Выбранные пользователи смогут пройти «{{ test.title }}» указанное число раз в заданное окно времени.</div></div></div>
+<form method="post" class="form">{% csrf_token %}
+  {% include "includes/user_picker.html" with checked=preselect disabled=open_ids %}
+  <div class="section-label">Настройки доступа</div>
+  {% include "includes/form_fields.html" %}
+  <div class="form-actions"><a class="btn gray" href="{{ back }}">Отмена</a><button class="btn" type="submit">Выдать доступ</button></div>
+</form>
+{% include "includes/user_filter_js.html" %}
+{% endblock %}

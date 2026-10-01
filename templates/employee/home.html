@@ -1,0 +1,31 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+<div class="page-head"><div class="titles">
+  <h1 class="large-title">Здравствуйте, {{ user.get_short_name }}</h1>
+  <div class="subtitle">{% now "l, j E" %}</div>
+</div></div>
+
+{% if assignments %}
+<div class="section" style="margin-top:0">
+  <div class="section-head"><h2 class="section-title">Назначенные тесты</h2><a href="{% url 'my_tests' %}">Все тесты</a></div>
+  <div class="list">{% for a in assignments %}{% with a=a %}{% include "includes/home_assignment.html" %}{% endwith %}{% endfor %}</div>
+</div>
+{% endif %}
+
+{% if in_progress %}
+<div class="section">
+  <div class="section-head"><h2 class="section-title">Продолжить обучение</h2></div>
+  <div class="grid">{% for c in in_progress %}{% include "includes/course_card.html" %}{% endfor %}</div>
+</div>
+{% endif %}
+
+<div class="section">
+  <div class="section-head"><h2 class="section-title">Мои курсы</h2>{% if courses %}<a href="{% url 'courses' %}">Все курсы</a>{% endif %}</div>
+  {% if courses %}
+  <div class="grid">{% for c in courses|slice:":6" %}{% include "includes/course_card.html" %}{% endfor %}</div>
+  {% else %}
+  <div class="card empty">{% icon "book" %}<div class="empty-title">Пока нет доступных курсов</div>Когда администратор откроет вам доступ, курсы появятся здесь.</div>
+  {% endif %}
+</div>
+{% endblock %}

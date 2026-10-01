@@ -1,0 +1,41 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}{{ course.title }}{% endblock %}
+{% block content %}
+{% url 'courses' as back %}{% include "includes/back.html" with href=back label="Курсы" %}
+<div class="page-head"><div class="titles">
+  {% if course.group %}<div class="muted small" style="font-weight:600">{{ course.group.title }}</div>{% endif %}
+  <h1 class="large-title">{{ course.title }}</h1>
+  {% if course.description %}<div class="subtitle">{{ course.description|linebreaksbr }}</div>{% endif %}
+</div></div>
+
+<div class="two-col">
+  <div>
+    <div class="section-label">Материалы</div>
+    {% if materials %}
+    <div class="list">
+      {% for m in materials %}
+      <a class="row with-icon" href="{% url 'material_detail' m.pk %}">
+        <span class="tile {% if m.done %}green{% elif m.kind == 'video' %}red{% elif m.kind == 'file' %}orange{% elif m.kind == 'link' %}accent{% endif %}">
+          {% if m.done %}{% icon "checkmark" %}{% elif m.kind == 'video' %}{% icon "play" %}{% elif m.kind == 'file' %}{% icon "paperclip" %}{% elif m.kind == 'link' %}{% icon "link" %}{% else %}{% icon "doc" %}{% endif %}
+        </span>
+        <div class="grow"><div class="row-title">{{ forloop.counter }}. {{ m.title }}</div>
+        <div class="row-sub">{{ m.get_kind_display }}{% if m.duration_minutes %} · {{ m.duration_minutes }} мин{% endif %}</div></div>
+        {% icon "chevron.right" "sm chev" %}
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}<div class="card empty">Материалы курса ещё не добавлены.</div>{% endif %}
+  </div>
+  <div>
+    <div class="section-label">Прогресс</div>
+    <div class="card pad">
+      <div style="display:flex;align-items:baseline;justify-content:space-between"><span class="stat-value" style="margin:0">{{ progress.percent }}%</span><span class="muted small">{{ progress.done }} из {{ progress.total }}</span></div>
+      <div class="progress{% if progress.percent == 100 %} green{% endif %}" style="margin-top:12px"><span style="width:{{ progress.percent }}%"></span></div>
+    </div>
+    {% if assignments %}
+    <div class="section-label" style="margin-top:24px">Тесты курса</div>
+    <div class="list">{% for a in assignments %}{% include "includes/home_assignment.html" %}{% endfor %}</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

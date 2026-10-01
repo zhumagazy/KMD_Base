@@ -1,0 +1,35 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}Результат — {{ attempt.user }}{% endblock %}
+{% block content_class %}narrow{% endblock %}
+{% block content %}
+{% url 'manage:results' as back %}{% include "includes/back.html" with href=back label="Результаты" %}
+<div class="page-head"><div class="titles"><h1 class="large-title">{{ attempt.user.get_full_name }}</h1><div class="subtitle">{{ attempt.test.title }}</div></div>
+<div class="actions">
+  <form class="inline-form" method="post" action="{% url 'manage:assign_extra' attempt.assignment_id %}">{% csrf_token %}<input type="hidden" name="back" value="{{ request.path }}"><button class="btn tinted">{% icon "arrow.clockwise" "sm" %}Разрешить пересдачу</button></form>
+  <a class="btn danger tinted" href="{% url 'manage:attempt_delete' attempt.pk %}">{% icon "trash" "sm" %}</a>
+</div></div>
+
+<div class="card result-hero" style="padding:28px">
+  {% if attempt.status == "in_progress" %}
+    <h1>Тест ещё проходится</h1>
+  {% else %}
+    <div style="margin-bottom:8px">{% include "includes/verdict.html" with a=attempt %}</div>
+    <div class="score">{{ attempt.percent|floatformat:0 }}%</div>
+    <div class="muted">{{ attempt.score|floatformat:"-2" }} из {{ attempt.max_score|floatformat:"-2" }} баллов · проходной {{ attempt.test.pass_percent }}%</div>
+  {% endif %}
+</div>
+
+<div class="card kv" style="margin-top:16px">
+  <div>Тип</div><div>{{ attempt.user.kind_label }}{% if attempt.user.position %} · {{ attempt.user.position }}{% endif %}</div>
+  <div>Начало</div><div>{{ attempt.started_at|date:"d.m.Y H:i:s" }}</div>
+  <div>Окончание</div><div>{{ attempt.finished_at|date:"d.m.Y H:i:s"|default:"—" }}</div>
+  <div>Длительность</div><div>{{ attempt.duration|duration }}{% if attempt.status == "timed_out" %} · время вышло{% endif %}</div>
+  <div>Результат виден пользователю</div><div>{% if attempt.test.show_results %}Да{% else %}Нет{% endif %}</div>
+</div>
+
+<form method="post" class="section">{% csrf_token %}
+  <div class="section-head"><h2 class="section-title">Ответы</h2></div>
+  {% for q in questions %}{% include "includes/question_review.html" %}{% endfor %}
+  {% if form.fields %}<div class="form-actions"><button class="btn" type="submit">Сохранить оценки</button></div>{% endif %}
+</form>
+{% endblock %}

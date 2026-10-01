@@ -1,0 +1,11 @@
+{% load kmd %}<a class="row with-icon" href="{% url 'test_intro' a.pk %}">
+  <span class="tile {% if a.state_code == 'in_progress' %}orange{% elif a.state_code == 'available' %}blue{% else %}gray{% endif %}">{% icon "checklist" %}</span>
+  <div class="grow">
+    <div class="row-title">{{ a.test.title }}</div>
+    <div class="row-sub">
+      {% if a.test.time_limit_minutes %}{{ a.test.time_limit_minutes }} мин · {% endif %}{{ a.test.question_count|plural:"вопрос,вопроса,вопросов" }}{% if a.available_until %} · до {{ a.available_until|date:"d.m.Y H:i" }}{% endif %}
+    </div>
+  </div>
+  <span class="badge {{ a.state_color }}">{{ a.state_label }}</span>
+  {% icon "chevron.right" "sm chev" %}
+</a>

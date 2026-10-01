@@ -1,0 +1,7 @@
+{% load kmd %}<a class="row with-icon" href="{% url 'test_intro' a.pk %}">
+  <span class="tile {% if a.current_attempt %}orange{% else %}blue{% endif %}">{% icon "checklist" %}</span>
+  <div class="grow"><div class="row-title">{{ a.test.title }}</div>
+  <div class="row-sub">{% if a.test.time_limit_minutes %}{{ a.test.time_limit_minutes }} мин · {% endif %}{{ a.test.question_count|plural:"вопрос,вопроса,вопросов" }}{% if a.available_until %} · до {{ a.available_until|date:"d.m.Y H:i" }}{% endif %}</div></div>
+  {% if a.current_attempt %}<span class="badge orange">Начат</span>{% endif %}
+  {% icon "chevron.right" "sm chev" %}
+</a>

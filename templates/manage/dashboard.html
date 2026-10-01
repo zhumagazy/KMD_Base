@@ -1,0 +1,32 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}Обзор{% endblock %}
+{% block content %}
+<div class="page-head"><div class="titles"><h1 class="large-title">Обзор</h1><div class="subtitle">{% now "l, j E Y" %}</div></div>
+<div class="actions"><a class="btn tinted" href="{% url 'manage:user_create' %}">{% icon "plus" "sm" %}Пользователь</a><a class="btn" href="{% url 'manage:test_create' %}">{% icon "plus" "sm" %}Тест</a></div></div>
+
+<div class="stats">
+  <a class="card stat" href="{% url 'manage:user_list' %}?kind=employee" style="color:inherit;text-decoration:none"><div class="stat-top"><span class="tile">{% icon "person.2" %}</span></div><div class="stat-value">{{ stats.employees }}</div><div class="stat-label">Активных сотрудников</div></a>
+  <a class="card stat" href="{% url 'manage:user_list' %}?kind=candidate" style="color:inherit;text-decoration:none"><div class="stat-top"><span class="tile accent">{% icon "person" %}</span></div><div class="stat-value">{{ stats.candidates }}</div><div class="stat-label">Кандидатов</div></a>
+  <a class="card stat" href="{% url 'manage:course_list' %}" style="color:inherit;text-decoration:none"><div class="stat-top"><span class="tile orange">{% icon "book" %}</span></div><div class="stat-value">{{ stats.courses }}</div><div class="stat-label">{{ stats.groups|plural:"группа,группы,групп" }} · {{ stats.materials|plural:"материал,материала,материалов" }}</div></a>
+  <a class="card stat" href="{% url 'manage:test_list' %}" style="color:inherit;text-decoration:none"><div class="stat-top"><span class="tile blue">{% icon "checklist" %}</span></div><div class="stat-value">{{ stats.tests }}</div><div class="stat-label">Активных тестов</div></a>
+  <a class="card stat" href="{% url 'manage:results' %}?status=review" style="color:inherit;text-decoration:none"><div class="stat-top"><span class="tile {% if stats.pending_review %}red{% else %}gray{% endif %}">{% icon "pencil" %}</span></div><div class="stat-value">{{ stats.pending_review }}</div><div class="stat-label">Ждут проверки</div></a>
+  <a class="card stat" href="{% url 'manage:results' %}" style="color:inherit;text-decoration:none"><div class="stat-top"><span class="tile green">{% icon "hourglass" %}</span></div><div class="stat-value">{{ stats.in_progress }}</div><div class="stat-label">Проходят сейчас</div></a>
+</div>
+
+<div class="section">
+  <div class="section-head"><h2 class="section-title">Последние результаты</h2><a href="{% url 'manage:results' %}">Все результаты</a></div>
+  {% if recent %}
+  <div class="list">{% for a in recent %}{% include "includes/attempt_row.html" %}{% endfor %}</div>
+  {% else %}<div class="card empty">{% icon "chart" %}<div class="empty-title">Пока нет результатов</div>Создайте тест и выдайте к нему доступ.</div>{% endif %}
+</div>
+
+<div class="section">
+  <div class="section-head"><h2 class="section-title">С чего начать</h2></div>
+  <div class="list">
+    <a class="row with-icon" href="{% url 'manage:group_create' %}"><span class="tile">{% icon "folder" %}</span><div class="grow"><div class="row-title">1. Создайте группу курсов</div><div class="row-sub">Например, «Адаптация», «Продукты», «Охрана труда»</div></div>{% icon "chevron.right" "sm chev" %}</a>
+    <a class="row with-icon" href="{% url 'manage:course_create' %}"><span class="tile orange">{% icon "book" %}</span><div class="grow"><div class="row-title">2. Добавьте курсы и материалы</div><div class="row-sub">Статьи, видео, файлы и ссылки</div></div>{% icon "chevron.right" "sm chev" %}</a>
+    <a class="row with-icon" href="{% url 'manage:user_create' %}"><span class="tile accent">{% icon "person.2" %}</span><div class="grow"><div class="row-title">3. Заведите сотрудников и кандидатов</div><div class="row-sub">И откройте им доступ к нужным группам и курсам</div></div>{% icon "chevron.right" "sm chev" %}</a>
+    <a class="row with-icon" href="{% url 'manage:test_create' %}"><span class="tile blue">{% icon "checklist" %}</span><div class="grow"><div class="row-title">4. Составьте тест и выдайте разовый доступ</div><div class="row-sub">Результаты по умолчанию видит только администратор</div></div>{% icon "chevron.right" "sm chev" %}</a>
+  </div>
+</div>
+{% endblock %}

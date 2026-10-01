@@ -1,0 +1,28 @@
+<script>
+(function () {
+  const input = document.getElementById("user-filter");
+  const rows = [...document.querySelectorAll("[data-user-row]")];
+  const kindBtns = [...document.querySelectorAll("[data-kind]")];
+  let kind = "all";
+  function apply() {
+    const q = (input.value || "").toLowerCase();
+    rows.forEach(r => {
+      const okQ = !q || r.dataset.search.includes(q);
+      const okK = kind === "all" || r.dataset.userKind === kind;
+      r.classList.toggle("hidden", !(okQ && okK));
+    });
+  }
+  input && input.addEventListener("input", apply);
+  kindBtns.forEach(b => b.addEventListener("click", e => {
+    e.preventDefault(); kind = b.dataset.kind;
+    kindBtns.forEach(x => x.classList.toggle("active", x === b)); apply();
+  }));
+  const all = document.getElementById("select-visible");
+  all && all.addEventListener("click", e => {
+    e.preventDefault();
+    const visible = rows.filter(r => !r.classList.contains("hidden")).map(r => r.querySelector("input[type=checkbox]")).filter(i => !i.disabled);
+    const target = !visible.every(i => i.checked);
+    visible.forEach(i => i.checked = target);
+  });
+})();
+</script>

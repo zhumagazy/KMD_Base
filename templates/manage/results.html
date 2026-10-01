@@ -1,0 +1,37 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}Результаты{% endblock %}
+{% block content %}
+<div class="page-head"><div class="titles"><h1 class="large-title">Результаты</h1></div>
+<a class="btn tinted" href="{% url 'manage:results_export' %}?{{ query }}">{% icon "download" "sm" %}Экспорт CSV</a></div>
+
+<form method="get" class="toolbar">
+  <div class="search">{% icon "search" %}<input type="search" name="q" value="{{ f.q }}" placeholder="Поиск по ФИО"></div>
+  <select name="test" style="max-width:240px;min-height:36px" onchange="this.form.submit()"><option value="">Все тесты</option>{% for t in tests %}<option value="{{ t.pk }}"{% if f.test == t.pk|stringformat:"d" %} selected{% endif %}>{{ t.title }}</option>{% endfor %}</select>
+  <select name="kind" style="max-width:200px;min-height:36px" onchange="this.form.submit()"><option value="">Все пользователи</option><option value="employee"{% if f.kind == "employee" %} selected{% endif %}>Сотрудники</option><option value="candidate"{% if f.kind == "candidate" %} selected{% endif %}>Кандидаты</option></select>
+  <select name="status" style="max-width:170px;min-height:36px" onchange="this.form.submit()"><option value="">Любой итог</option><option value="passed"{% if f.status == "passed" %} selected{% endif %}>Сдан</option><option value="failed"{% if f.status == "failed" %} selected{% endif %}>Не сдан</option><option value="review"{% if f.status == "review" %} selected{% endif %}>Ждёт проверки</option></select>
+</form>
+
+{% if in_progress %}
+<div class="section-label">Проходят сейчас</div>
+<div class="list" style="margin-bottom:24px">{% for a in in_progress %}
+  <div class="row"><span class="avatar">{{ a.user.initials }}</span><div class="grow"><div class="row-title">{{ a.user.get_full_name }}</div><div class="row-sub">{{ a.test.title }} · начат {{ a.started_at|date:"d.m H:i" }}{% if a.deadline %} · до {{ a.deadline|date:"H:i" }}{% endif %}</div></div><span class="badge orange">В процессе</span></div>
+{% endfor %}</div>
+{% endif %}
+
+{% if attempts %}
+<div class="list"><div class="table-wrap"><table class="table">
+  <thead><tr><th>Пользователь</th><th>Тест</th><th class="keep">Итог</th><th class="num">Баллы</th><th>Дата</th><th>Время</th></tr></thead>
+  <tbody>{% for a in attempts %}
+  <tr class="clickable" onclick="location.href='{% url 'manage:attempt_detail' a.pk %}'">
+    <td><a href="{% url 'manage:attempt_detail' a.pk %}" style="color:inherit;font-weight:600">{{ a.user.get_full_name }}</a><div class="muted small">{{ a.user.kind_label }}</div></td>
+    <td>{{ a.test.title }}</td>
+    <td class="keep">{% include "includes/verdict.html" %}</td>
+    <td class="num">{{ a.score|floatformat:"-2" }} / {{ a.max_score|floatformat:"-2" }}</td>
+    <td class="muted">{{ a.finished_at|date:"d.m.Y H:i" }}</td>
+    <td class="muted">{{ a.duration|duration }}{% if a.status == "timed_out" %} ⏱{% endif %}</td>
+  </tr>{% endfor %}</tbody>
+</table></div></div>
+{% else %}
+<div class="card empty">{% icon "chart" %}<div class="empty-title">Результатов нет</div>Измените фильтры или дождитесь, пока пользователи сдадут тесты.</div>
+{% endif %}
+{% endblock %}

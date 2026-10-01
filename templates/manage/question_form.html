@@ -1,0 +1,61 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}Вопрос{% endblock %}
+{% block content_class %}narrow{% endblock %}
+{% block content %}
+{% url 'manage:test_detail' test.pk as back %}{% include "includes/back.html" with href=back label=test.title %}
+<div class="page-head"><div class="titles"><h1 class="large-title">{% if question %}Редактирование вопроса{% else %}Новый вопрос{% endif %}</h1></div>
+{% if question %}<a class="btn danger tinted sm" href="{% url 'manage:question_delete' question.pk %}">{% icon "trash" "sm" %}Удалить</a>{% endif %}</div>
+<form method="post" class="form" enctype="multipart/form-data" id="qform">{% csrf_token %}
+  {% include "includes/form_fields.html" %}
+
+  <div id="choices-block">
+    <div class="section-head"><div class="section-label" style="margin:0">Варианты ответа · отметьте верные</div><button type="button" class="btn plain sm" id="add-choice">{% icon "plus" "sm" %}Вариант</button></div>
+    {{ formset.management_form }}
+    {% if formset.non_form_errors %}<div class="alert">{{ formset.non_form_errors|join:" " }}</div>{% endif %}
+    <div class="list" id="choices" style="margin-bottom:24px">
+      {% for f in formset %}{% include "includes/choice_row.html" %}{% endfor %}
+    </div>
+    <template id="choice-template">{% with f=formset.empty_form %}{% include "includes/choice_row.html" %}{% endwith %}</template>
+  </div>
+
+  <div class="form-actions">
+    <a class="btn gray" href="{{ back }}">Отмена</a>
+    {% if not question %}<button class="btn tinted" type="submit" name="add_another" value="1">Сохранить и добавить ещё</button>{% endif %}
+    <button class="btn" type="submit">Сохранить</button>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const kind = document.getElementById("id_kind");
+  const block = document.getElementById("choices-block");
+  const list = document.getElementById("choices");
+  const total = document.getElementById("id_choices-TOTAL_FORMS");
+  const tpl = document.getElementById("choice-template").innerHTML;
+  function sync() {
+    block.style.display = kind.value === "text" ? "none" : "";
+    const single = kind.value === "single";
+    list.querySelectorAll(".correct-input").forEach(i => i.dataset.single = single ? "1" : "");
+  }
+  kind.addEventListener("change", sync); sync();
+  list.addEventListener("change", e => {
+    if (e.target.classList.contains("correct-input") && e.target.checked && kind.value === "single") {
+      list.querySelectorAll(".correct-input").forEach(i => { if (i !== e.target) i.checked = false; });
+    }
+  });
+  document.getElementById("add-choice").addEventListener("click", () => {
+    const n = parseInt(total.value, 10);
+    list.insertAdjacentHTML("beforeend", tpl.replace(/__prefix__/g, n));
+    total.value = n + 1;
+    list.lastElementChild.querySelector("input[type=text]").focus();
+  });
+  list.addEventListener("click", e => {
+    const btn = e.target.closest(".remove-choice"); if (!btn) return;
+    const row = btn.closest(".row");
+    const del = row.querySelector("input[name$=DELETE]");
+    if (del) { del.checked = true; row.classList.add("hidden"); }
+  });
+})();
+</script>
+{% endblock %}

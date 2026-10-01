@@ -1,0 +1,7 @@
+{% load kmd %}<a class="row with-icon" href="{% url 'manage:attempt_detail' a.pk %}">
+  <span class="avatar">{{ a.user.initials }}</span>
+  <div class="grow"><div class="row-title">{{ a.user.get_full_name }}{% if a.user.is_candidate %} <span class="badge">кандидат</span>{% endif %}</div>
+  <div class="row-sub">{{ a.test.title }} · {{ a.finished_at|date:"d.m.Y H:i" }}</div></div>
+  {% include "includes/verdict.html" %}
+  {% icon "chevron.right" "sm chev" %}
+</a>

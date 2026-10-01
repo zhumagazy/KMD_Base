@@ -1,0 +1,55 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}{{ u }}{% endblock %}
+{% block content %}
+{% url 'manage:user_list' as back %}{% include "includes/back.html" with href=back label="Пользователи" %}
+<div class="page-head">
+  <div style="display:flex;gap:16px;align-items:center"><span class="avatar lg">{{ u.initials }}</span>
+  <div class="titles"><h1 class="large-title">{{ u.get_full_name }}</h1><div class="subtitle">
+    <span class="badge {% if u.is_admin %}brand{% elif u.is_candidate %}orange{% endif %}">{{ u.kind_label }}</span>
+    {% if not u.is_active %}<span class="badge red">Заблокирован</span>{% endif %} {{ u.position }}</div></div></div>
+  <div class="actions">
+    <a class="btn gray" href="{% url 'manage:user_edit' u.pk %}">{% icon "pencil" "sm" %}Изменить</a>
+    <a class="btn gray" href="{% url 'manage:user_password' u.pk %}">{% icon "key" "sm" %}Пароль</a>
+    {% if u.pk != user.pk %}
+    <form class="inline-form" method="post" action="{% url 'manage:user_toggle' u.pk %}">{% csrf_token %}<button class="btn {% if u.is_active %}danger tinted{% else %}tinted{% endif %}">{% if u.is_active %}Заблокировать{% else %}Активировать{% endif %}</button></form>
+    <a class="btn danger tinted" href="{% url 'manage:user_delete' u.pk %}">{% icon "trash" "sm" %}</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="two-col">
+  <div>
+    {% if not u.is_admin %}
+    <div class="section-head"><h2 class="section-title">Доступы</h2><a class="btn" href="{% url 'manage:user_access' u.pk %}">{% icon "key" "sm" %}Управлять доступами</a></div>
+    <div class="section-label">Группы курсов</div>
+    <div class="list" style="margin-bottom:20px">{% for a in group_accesses %}
+      <a class="row with-icon" href="{% url 'manage:group_detail' a.group_id %}"><span class="tile">{% icon "folder" %}</span><div class="grow"><div class="row-title">{{ a.group.title }}</div><div class="row-sub">выдан {{ a.granted_at|date:"d.m.Y" }}{% if a.expires_at %} · до {{ a.expires_at|date:"d.m.Y" }}{% endif %}</div></div>{% if not a.is_active %}<span class="badge red">истёк</span>{% endif %}</a>
+    {% empty %}<div class="row muted">Нет</div>{% endfor %}</div>
+    <div class="section-label">Отдельные курсы</div>
+    <div class="list" style="margin-bottom:20px">{% for a in course_accesses %}
+      <a class="row with-icon" href="{% url 'manage:course_detail' a.course_id %}"><span class="tile orange">{% icon "book" %}</span><div class="grow"><div class="row-title">{{ a.course.title }}</div><div class="row-sub">{% if a.course.group %}{{ a.course.group.title }} · {% endif %}выдан {{ a.granted_at|date:"d.m.Y" }}{% if a.expires_at %} · до {{ a.expires_at|date:"d.m.Y" }}{% endif %}</div></div>{% if not a.is_active %}<span class="badge red">истёк</span>{% endif %}</a>
+    {% empty %}<div class="row muted">Нет</div>{% endfor %}</div>
+    <div class="section-label">Тесты</div>
+    <div class="list">{% for a in assignments %}
+      <a class="row with-icon" href="{% url 'manage:test_detail' a.test_id %}"><span class="tile blue">{% icon "checklist" %}</span><div class="grow"><div class="row-title">{{ a.test.title }}</div><div class="row-sub">попыток {{ a.attempts_used }} из {{ a.attempts_allowed }}{% if a.available_until %} · до {{ a.available_until|date:"d.m.Y H:i" }}{% endif %}</div></div>{% if a.is_revoked %}<span class="badge">отозван</span>{% endif %}</a>
+    {% empty %}<div class="row muted">Нет</div>{% endfor %}</div>
+    {% else %}
+    <div class="card empty">{% icon "key" %}<div class="empty-title">Администратор</div>Имеет полный доступ ко всем разделам платформы.</div>
+    {% endif %}
+  </div>
+  <div>
+    <div class="section-label">Профиль</div>
+    <div class="card kv" style="margin-bottom:20px">
+      <div>Логин</div><div>{{ u.username }}</div>
+      <div>Email</div><div>{{ u.email|default:"—" }}</div>
+      <div>Телефон</div><div>{{ u.phone|default:"—" }}</div>
+      <div>Последний вход</div><div>{{ u.last_login|date:"d.m.Y H:i"|default:"никогда" }}</div>
+      <div>Создан</div><div>{{ u.date_joined|date:"d.m.Y" }}</div>
+    </div>
+    <div class="section-label">Результаты тестов</div>
+    {% if attempts %}<div class="list">{% for a in attempts %}
+      <a class="row" href="{% url 'manage:attempt_detail' a.pk %}"><div class="grow"><div class="row-title">{{ a.test.title }}</div><div class="row-sub">{{ a.finished_at|date:"d.m.Y H:i" }}</div></div>{% include "includes/verdict.html" %}</a>
+    {% endfor %}</div>{% else %}<div class="card empty small">Тесты ещё не сдавались.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

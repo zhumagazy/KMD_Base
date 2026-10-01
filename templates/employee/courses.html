@@ -1,0 +1,14 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}Курсы{% endblock %}
+{% block content %}
+<div class="page-head"><div class="titles"><h1 class="large-title">Курсы</h1><div class="subtitle">{{ courses|length|plural:"курс доступен,курса доступно,курсов доступно" }}</div></div></div>
+{% for block in grouped %}
+<div class="section"{% if forloop.first %} style="margin-top:0"{% endif %}>
+  <div class="section-head"><h2 class="section-title">{% if block.group %}{{ block.group.title }}{% else %}Отдельные курсы{% endif %}</h2></div>
+  {% if block.group.description %}<p class="muted" style="margin:-4px 4px 12px">{{ block.group.description }}</p>{% endif %}
+  <div class="grid">{% for c in block.courses %}{% include "includes/course_card.html" %}{% endfor %}</div>
+</div>
+{% empty %}
+<div class="card empty">{% icon "book" %}<div class="empty-title">Пока нет доступных курсов</div>Когда администратор откроет вам доступ, курсы появятся здесь.</div>
+{% endfor %}
+{% endblock %}

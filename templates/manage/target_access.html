@@ -1,0 +1,14 @@
+{% extends "app.html" %}
+{% block title %}Доступ — {{ target }}{% endblock %}
+{% block content_class %}narrow{% endblock %}
+{% block content %}
+{% url back_url target.pk as back %}{% include "includes/back.html" with href=back label=target.title %}
+<div class="page-head"><div class="titles"><h1 class="large-title">Доступ к {{ kind }}</h1><div class="subtitle">«{{ target.title }}». Отметьте активных сотрудников и кандидатов, которым открыт доступ.</div></div></div>
+<form method="post" class="form">{% csrf_token %}
+  {% include "includes/user_picker.html" with checked=existing disabled=None %}
+  <div class="section-label">Срок доступа</div>
+  {% include "includes/form_fields.html" %}
+  <div class="form-actions"><a class="btn gray" href="{{ back }}">Отмена</a><button class="btn" type="submit">Сохранить доступ</button></div>
+</form>
+{% include "includes/user_filter_js.html" %}
+{% endblock %}

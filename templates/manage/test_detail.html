@@ -1,0 +1,63 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}{{ test.title }}{% endblock %}
+{% block content %}
+{% url 'manage:test_list' as back %}{% include "includes/back.html" with href=back label="Тесты" %}
+<div class="page-head"><div class="titles"><h1 class="large-title">{{ test.title }}</h1>
+<div class="subtitle">{% if test.course %}Курс «{{ test.course.title }}» · {% endif %}{% if test.is_active %}<span class="badge green">Активен</span>{% else %}<span class="badge">Неактивен</span>{% endif %}</div></div>
+<div class="actions">
+  <a class="btn gray" href="{% url 'manage:test_edit' test.pk %}">{% icon "pencil" "sm" %}Настройки</a>
+  <a class="btn danger tinted" href="{% url 'manage:test_delete' test.pk %}">{% icon "trash" "sm" %}</a>
+  <a class="btn" href="{% url 'manage:assign' test.pk %}">{% icon "key" "sm" %}Выдать доступ</a>
+</div></div>
+
+<div class="stats" style="margin-bottom:8px">
+  <div class="card stat"><div class="stat-label">Вопросов / баллов</div><div class="stat-value">{{ questions|length }} / {{ total_points }}</div></div>
+  <div class="card stat"><div class="stat-label">Время</div><div class="stat-value">{% if test.time_limit_minutes %}{{ test.time_limit_minutes }} мин{% else %}∞{% endif %}</div></div>
+  <div class="card stat"><div class="stat-label">Сдано попыток</div><div class="stat-value">{{ stats.n }}</div></div>
+  <div class="card stat"><div class="stat-label">Средний результат</div><div class="stat-value">{% if stats.avg is not None %}{{ stats.avg|floatformat:0 }}%{% else %}—{% endif %}</div></div>
+</div>
+<p class="muted small" style="margin:8px 4px 0">
+  Проходной балл {{ test.pass_percent }}%{% if test.questions_per_attempt %} · {{ test.questions_per_attempt }} случайных вопросов в попытке{% endif %}
+  · {% if test.shuffle_questions %}вопросы перемешиваются{% else %}вопросы по порядку{% endif %}
+  · результат {% if test.show_results %}показывается пользователю{% if test.show_correct_answers %} с разбором{% endif %}{% else %}скрыт от пользователя{% endif %}
+  {% if test.require_course_completion %}· только после изучения курса{% endif %}
+</p>
+
+<div class="section">
+  <div class="section-head"><h2 class="section-title">Вопросы</h2><a class="btn tinted sm" href="{% url 'manage:question_create' test.pk %}">{% icon "plus" "sm" %}Вопрос</a></div>
+  {% if questions %}
+  <div class="list">{% for q in questions %}
+    <a class="row" href="{% url 'manage:question_edit' q.pk %}" style="align-items:flex-start">
+      <span class="q-num" style="min-width:28px;padding-top:2px">{{ forloop.counter }}.</span>
+      <div class="grow">
+        <div class="row-title" style="white-space:pre-line">{{ q.text }}</div>
+        <div class="row-sub">{{ q.get_kind_display }} · {{ q.points|plural:"балл,балла,баллов" }}</div>
+        {% if not q.is_text %}<div class="row-sub" style="margin-top:4px">{% for c in q.choices.all %}<span class="badge{% if c.is_correct %} green{% endif %}" style="margin:2px 4px 0 0">{% if c.is_correct %}✓ {% endif %}{{ c.text|truncatechars:50 }}</span>{% endfor %}</div>{% endif %}
+      </div>
+      {% icon "pencil" "sm chev" %}
+    </a>{% endfor %}</div>
+  {% else %}<div class="card empty">{% icon "checklist" %}<div class="empty-title">Вопросов нет</div>Добавьте вопросы — с одним, несколькими вариантами или развёрнутым ответом.</div>{% endif %}
+</div>
+
+<div class="section">
+  <div class="section-head"><h2 class="section-title">Выданные доступы</h2><a class="btn tinted sm" href="{% url 'manage:assign' test.pk %}">{% icon "plus" "sm" %}Выдать</a></div>
+  {% if assignments %}
+  <div class="list"><div class="table-wrap"><table class="table">
+    <thead><tr><th>Пользователь</th><th>Статус</th><th class="keep">Результат</th><th>Попытки</th><th>Окно</th><th></th></tr></thead>
+    <tbody>{% for a in assignments %}
+    <tr>
+      <td><a href="{% url 'manage:user_detail' a.user_id %}" style="color:inherit;font-weight:600">{{ a.user.get_full_name }}</a><div class="muted small">{{ a.user.kind_label }}</div></td>
+      <td><span class="badge {{ a.state_color }}">{{ a.state_label }}</span></td>
+      <td class="keep">{% with last=a.last_finished_attempt %}{% if last %}<a href="{% url 'manage:attempt_detail' last.pk %}">{% include "includes/verdict.html" with a=last %}</a>{% else %}<span class="muted">—</span>{% endif %}{% endwith %}</td>
+      <td>{{ a.attempts_used }} / {{ a.attempts_allowed }}</td>
+      <td class="muted small">{% if a.available_from %}с {{ a.available_from|date:"d.m H:i" }}<br>{% endif %}{% if a.available_until %}до {{ a.available_until|date:"d.m H:i" }}{% endif %}{% if not a.available_from and not a.available_until %}без ограничений{% endif %}</td>
+      <td style="white-space:nowrap;text-align:right">
+        <form class="inline-form" method="post" action="{% url 'manage:assign_extra' a.pk %}">{% csrf_token %}<button class="btn plain sm" title="Добавить попытку">{% icon "arrow.clockwise" "sm" %}</button></form>
+        <a class="btn plain sm" href="{% url 'manage:assign_edit' a.pk %}" title="Изменить">{% icon "pencil" "sm" %}</a>
+        {% if not a.is_revoked %}<form class="inline-form" method="post" action="{% url 'manage:assign_revoke' a.pk %}" onsubmit="return confirm('Отозвать доступ?')">{% csrf_token %}<button class="btn plain sm" style="color:var(--red)" title="Отозвать">{% icon "xmark" "sm" %}</button></form>{% endif %}
+      </td>
+    </tr>{% endfor %}</tbody>
+  </table></div></div>
+  {% else %}<div class="card empty small">Доступ к тесту ещё никому не выдан.</div>{% endif %}
+</div>
+{% endblock %}

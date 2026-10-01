@@ -1,0 +1,25 @@
+{% load static kmd %}<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>{% block title %}KMD Base{% endblock %} · KMD Base</title>
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'css/brand.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% include "includes/icons.html" %}
+{% block body %}{% endblock %}
+{% if messages %}
+<div class="messages" role="status">
+  {% for m in messages %}
+  <div class="toast {{ m.tags }}">{% if m.tags == "error" %}{% icon "exclamation" %}{% else %}{% icon "checkmark.circle" %}{% endif %}<div>{{ m }}</div></div>
+  {% endfor %}
+</div>
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

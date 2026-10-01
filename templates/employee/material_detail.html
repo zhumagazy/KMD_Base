@@ -1,0 +1,39 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}{{ material.title }}{% endblock %}
+{% block content_class %}narrow{% endblock %}
+{% block content %}
+{% if user.is_admin %}{% url 'manage:course_detail' course.pk as back %}{% else %}{% url 'course_detail' course.pk as back %}{% endif %}
+{% include "includes/back.html" with href=back label=course.title %}
+<div class="page-head"><div class="titles">
+  <div class="muted small" style="font-weight:600">Материал {{ position }} из {{ total }} · {{ material.get_kind_display }}{% if material.duration_minutes %} · {{ material.duration_minutes }} мин{% endif %}</div>
+  <h1 class="large-title">{{ material.title }}</h1>
+</div></div>
+
+{% if material.embed_url %}<div class="video"><iframe src="{{ material.embed_url }}" allowfullscreen allow="accelerometer; autoplay; encrypted-media; picture-in-picture"></iframe></div>{% endif %}
+
+{% if material.body %}<div class="card pad article">{{ material.body_html }}</div>{% endif %}
+
+{% if material.file or material.url and not material.embed_url %}
+<div class="list" style="margin-top:16px">
+  {% if material.file %}<a class="row with-icon" href="{{ material.file.url }}" target="_blank" rel="noopener"><span class="tile orange">{% icon "paperclip" %}</span><div class="grow"><div class="row-title">{{ material.filename }}</div><div class="row-sub">Открыть файл</div></div>{% icon "download" "sm chev" %}</a>{% endif %}
+  {% if material.url and not material.embed_url %}<a class="row with-icon" href="{{ material.url }}" target="_blank" rel="noopener"><span class="tile accent">{% icon "link" %}</span><div class="grow"><div class="row-title">{{ material.url|truncatechars:70 }}</div><div class="row-sub">Открыть ссылку</div></div>{% icon "chevron.right" "sm chev" %}</a>{% endif %}
+</div>
+{% endif %}
+
+{% if not user.is_admin %}
+<form method="post" action="{% url 'material_complete' material.pk %}" style="margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">{% csrf_token %}
+  {% if done %}
+    <span class="badge green" style="font-size:14px;padding:8px 14px">{% icon "checkmark" "sm" %} Изучено</span>
+    <button class="btn plain sm" name="undo" value="1">Отметить как неизученное</button>
+  {% else %}
+    {% if next %}<input type="hidden" name="next" value="{{ next.pk }}">{% endif %}
+    <button class="btn lg" type="submit">{% icon "checkmark" %}{% if next %}Изучено — дальше{% else %}Отметить как изученное{% endif %}</button>
+  {% endif %}
+</form>
+{% endif %}
+
+<div class="pager">
+  {% if prev %}<a class="card" href="{% url 'material_detail' prev.pk %}"><div class="lbl">← Назад</div><div class="ttl">{{ prev.title }}</div></a>{% else %}<span></span>{% endif %}
+  {% if next %}<a class="card" href="{% url 'material_detail' next.pk %}" style="text-align:right"><div class="lbl">Далее →</div><div class="ttl">{{ next.title }}</div></a>{% endif %}
+</div>
+{% endblock %}

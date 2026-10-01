@@ -1,0 +1,85 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}{{ test.title }}{% endblock %}
+{% block content_class %}narrow{% endblock %}
+{% block content %}
+<div class="test-bar">
+  <div class="ttl">{{ test.title }}</div>
+  <span class="save-state" id="save-state"></span>
+  {% if attempt.deadline %}<span class="timer" id="timer" data-seconds="{{ attempt.seconds_left }}">{% icon "clock" "sm" %}<span>--:--</span></span>{% endif %}
+</div>
+
+<form method="post" id="attempt-form" action="{% url 'attempt_submit' attempt.pk %}" data-save-url="{% url 'attempt_save' attempt.pk %}">{% csrf_token %}
+  {% for q in questions %}
+  <div class="list question">
+    <div class="question-head"><div class="grow">
+      <div class="q-num">Вопрос {{ forloop.counter }} из {{ questions|length }}</div>
+      <div class="q-text">{{ q.text }}</div>
+      <div class="q-hint">{% if q.kind == "multiple" %}Выберите все правильные варианты{% elif q.kind == "single" %}Выберите один вариант{% else %}Напишите развёрнутый ответ{% endif %}</div>
+    </div></div>
+    {% if q.image %}<img src="{{ q.image.url }}" alt="">{% endif %}
+    {% if q.is_text %}
+      <textarea name="q{{ q.id }}" rows="5" placeholder="Ваш ответ">{{ q.text_value }}</textarea>
+    {% else %}
+      <div class="answers">
+      {% for c in q.ordered_choices %}
+        <label class="row"><input class="check" type="{% if q.kind == 'multiple' %}checkbox{% else %}radio{% endif %}" name="q{{ q.id }}" value="{{ c.id }}"{% if c.id in q.selected_ids %} checked{% endif %}><span class="grow">{{ c.text }}</span></label>
+      {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+  <button class="btn lg block" type="submit" id="submit-btn">Завершить и отправить</button>
+  <p class="muted small" style="text-align:center">После отправки изменить ответы будет нельзя.</p>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const form = document.getElementById("attempt-form");
+  const state = document.getElementById("save-state");
+  const csrf = form.querySelector("[name=csrfmiddlewaretoken]").value;
+  let submitting = false, timer = null, dirty = false;
+
+  function save() {
+    dirty = false;
+    state.textContent = "Сохранение…";
+    return fetch(form.dataset.saveUrl, { method: "POST", body: new FormData(form), headers: { "X-CSRFToken": csrf }, credentials: "same-origin" })
+      .then(r => r.json())
+      .then(d => {
+        if (d.finished) { submitting = true; window.location = d.redirect; return; }
+        state.textContent = "Сохранено";
+      })
+      .catch(() => { state.textContent = "Нет связи"; dirty = true; });
+  }
+  form.addEventListener("change", () => { clearTimeout(timer); timer = setTimeout(save, 400); });
+  form.addEventListener("input", e => { if (e.target.tagName === "TEXTAREA") { dirty = true; clearTimeout(timer); timer = setTimeout(save, 1500); } });
+  setInterval(() => { if (dirty) save(); }, 15000);
+
+  form.addEventListener("submit", e => {
+    if (submitting) return;
+    const unanswered = [...form.querySelectorAll(".question")].filter(q => {
+      const inputs = q.querySelectorAll("input"); const ta = q.querySelector("textarea");
+      return ta ? !ta.value.trim() : ![...inputs].some(i => i.checked);
+    }).length;
+    const msg = unanswered ? `Без ответа осталось вопросов: ${unanswered}. Всё равно отправить?` : "Отправить ответы? Изменить их будет нельзя.";
+    if (!confirm(msg)) { e.preventDefault(); return; }
+    submitting = true;
+  });
+  window.addEventListener("pagehide", () => { if (!submitting && navigator.sendBeacon) navigator.sendBeacon(form.dataset.saveUrl, new FormData(form)); });
+
+  const t = document.getElementById("timer");
+  if (t) {
+    let left = parseInt(t.dataset.seconds, 10);
+    const out = t.querySelector("span");
+    const tick = () => {
+      const h = Math.floor(left / 3600), m = Math.floor(left % 3600 / 60), s = left % 60;
+      out.textContent = (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(s).padStart(2, "0");
+      if (left <= 60) t.classList.add("warn");
+      if (left <= 0) { submitting = true; form.submit(); return; }
+      left -= 1;
+    };
+    tick(); setInterval(tick, 1000);
+  }
+})();
+</script>
+{% endblock %}

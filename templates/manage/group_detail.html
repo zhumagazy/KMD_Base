@@ -1,0 +1,26 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}{{ group.title }}{% endblock %}
+{% block content %}
+{% url 'manage:group_list' as back %}{% include "includes/back.html" with href=back label="Группы" %}
+<div class="page-head"><div class="titles"><h1 class="large-title">{{ group.title }}</h1>{% if group.description %}<div class="subtitle">{{ group.description }}</div>{% endif %}</div>
+<div class="actions">
+  <a class="btn gray" href="{% url 'manage:group_edit' group.pk %}">{% icon "pencil" "sm" %}Изменить</a>
+  <a class="btn danger tinted" href="{% url 'manage:group_delete' group.pk %}">{% icon "trash" "sm" %}</a>
+</div></div>
+
+<div class="two-col">
+  <div>
+    <div class="section-head"><h2 class="section-title">Курсы</h2><a class="btn tinted sm" href="{% url 'manage:course_create' %}?group={{ group.pk }}">{% icon "plus" "sm" %}Курс</a></div>
+    {% if courses %}
+    <div class="list">{% for c in courses %}
+      <a class="row with-icon" href="{% url 'manage:course_detail' c.pk %}"><span class="tile orange">{% icon "book" %}</span>
+      <div class="grow"><div class="row-title">{{ c.title }}{% if not c.is_published %} <span class="badge">черновик</span>{% endif %}</div><div class="row-sub">{{ c.n_materials|plural:"материал,материала,материалов" }} · {{ c.n_tests|plural:"тест,теста,тестов" }}</div></div>{% icon "chevron.right" "sm chev" %}</a>
+    {% endfor %}</div>
+    {% else %}<div class="card empty">В группе пока нет курсов.</div>{% endif %}
+  </div>
+  <div>
+    <div class="section-head"><h2 class="section-title">Доступ</h2><a class="btn tinted sm" href="{% url 'manage:group_access' group.pk %}">Управлять</a></div>
+    {% include "includes/access_list.html" with accesses=accesses %}
+  </div>
+</div>
+{% endblock %}

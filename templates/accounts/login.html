@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Вход{% endblock %}
+{% block body %}
+<div class="auth">
+  <div class="card auth-card">
+    <div class="brand-mark">KMD</div>
+    <h1>KMD Base</h1>
+    <p class="lead">База знаний и тестирование</p>
+    {% if form.errors %}<div class="alert">Неверный логин или пароль. Если доступ заблокирован — обратитесь к администратору.</div>{% endif %}
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <div class="field"><label class="lbl" for="id_username">Логин</label><input type="text" name="username" id="id_username" autocomplete="username" autofocus required value="{{ form.username.value|default:'' }}"></div>
+      <div class="field"><label class="lbl" for="id_password">Пароль</label><input type="password" name="password" id="id_password" autocomplete="current-password" required></div>
+      <button class="btn lg block" type="submit">Войти</button>
+    </form>
+    <p class="muted small" style="text-align:center;margin:18px 0 0">Учётные записи выдаёт администратор.</p>
+  </div>
+</div>
+{% endblock %}

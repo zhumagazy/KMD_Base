@@ -1,0 +1,33 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}Пользователи{% endblock %}
+{% block content %}
+<div class="page-head"><div class="titles"><h1 class="large-title">Пользователи</h1><div class="subtitle">Сотрудники, кандидаты и администраторы.</div></div>
+<a class="btn" href="{% url 'manage:user_create' %}">{% icon "plus" "sm" %}Новый пользователь</a></div>
+
+<form method="get" class="toolbar">
+  <div class="search">{% icon "search" %}<input type="search" name="q" value="{{ q }}" placeholder="Поиск"></div>
+  <input type="hidden" name="status" value="{{ status }}">
+  <div class="segmented">
+    <a href="?kind=&status={{ status }}&q={{ q|urlencode }}" class="{% if not kind %}active{% endif %}">Все</a>
+    <a href="?kind=employee&status={{ status }}&q={{ q|urlencode }}" class="{% if kind == 'employee' %}active{% endif %}">Сотрудники</a>
+    <a href="?kind=candidate&status={{ status }}&q={{ q|urlencode }}" class="{% if kind == 'candidate' %}active{% endif %}">Кандидаты</a>
+    <a href="?kind=admin&status={{ status }}&q={{ q|urlencode }}" class="{% if kind == 'admin' %}active{% endif %}">Админы</a>
+  </div>
+  <div class="segmented">
+    <a href="?kind={{ kind }}&status=active&q={{ q|urlencode }}" class="{% if status == 'active' %}active{% endif %}">Активные</a>
+    <a href="?kind={{ kind }}&status=inactive&q={{ q|urlencode }}" class="{% if status == 'inactive' %}active{% endif %}">Заблокированные</a>
+    <a href="?kind={{ kind }}&status=all&q={{ q|urlencode }}" class="{% if status == 'all' %}active{% endif %}">Все</a>
+  </div>
+</form>
+
+{% if users %}
+<div class="list">{% for u in users %}
+  <a class="row" href="{% url 'manage:user_detail' u.pk %}">
+    <span class="avatar">{{ u.initials }}</span>
+    <div class="grow"><div class="row-title">{{ u.get_full_name }}</div><div class="row-sub">{{ u.username }}{% if u.position %} · {{ u.position }}{% endif %}{% if not u.is_admin %} · групп {{ u.n_groups }}, курсов {{ u.n_courses }}, тестов {{ u.n_tests }}{% endif %}</div></div>
+    {% if not u.is_active %}<span class="badge red">Заблокирован</span>{% endif %}
+    <span class="badge {% if u.is_admin %}brand{% elif u.is_candidate %}orange{% endif %}">{{ u.kind_label }}</span>
+    {% icon "chevron.right" "sm chev" %}
+  </a>{% endfor %}</div>
+{% else %}<div class="card empty">{% icon "person.2" %}<div class="empty-title">Никого не найдено</div></div>{% endif %}
+{% endblock %}

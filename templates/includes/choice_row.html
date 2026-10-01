@@ -1,0 +1,8 @@
+{% load kmd %}<div class="row">
+  {% for h in f.hidden_fields %}{{ h }}{% endfor %}
+  <input class="check correct-input" type="checkbox" name="{{ f.is_correct.html_name }}" id="{{ f.is_correct.id_for_label }}" title="Верный ответ"{% if f.is_correct.value %} checked{% endif %}>
+  <div class="grow"><input type="text" name="{{ f.text.html_name }}" id="{{ f.text.id_for_label }}" value="{{ f.text.value|default:'' }}" placeholder="Вариант ответа" maxlength="500">
+  {% if f.errors %}<div class="errors" style="color:var(--red);font-size:13px">{% for e in f.errors.values %}{{ e|join:" " }}{% endfor %}</div>{% endif %}</div>
+  <input type="checkbox" name="{{ f.DELETE.html_name }}" class="hidden"{% if f.DELETE.value %} checked{% endif %}>
+  <button type="button" class="btn plain sm remove-choice" title="Удалить" style="color:var(--red)">{% icon "trash" "sm" %}</button>
+</div>

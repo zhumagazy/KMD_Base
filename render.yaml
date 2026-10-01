@@ -1,0 +1,32 @@
+# Деплой на Render.com «в один клик»: New → Blueprint → выбрать этот репозиторий.
+services:
+  - type: web
+    name: kmd-base
+    runtime: python
+    plan: starter
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi --bind 0.0.0.0:$PORT --workers 3 --timeout 60
+    envVars:
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kmd-base-db
+          property: connectionString
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: MEDIA_ROOT
+        value: /var/data/media
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+    disk:
+      name: media
+      mountPath: /var/data
+      sizeGB: 5
+databases:
+  - name: kmd-base-db
+    plan: basic-256mb

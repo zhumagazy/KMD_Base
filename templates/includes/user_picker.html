@@ -1,0 +1,16 @@
+{% load kmd %}<div class="toolbar">
+  <div class="search">{% icon "search" %}<input type="search" id="user-filter" placeholder="Поиск по имени или должности"></div>
+  <div class="segmented"><a href="#" class="active" data-kind="all">Все</a><a href="#" data-kind="employee">Сотрудники</a><a href="#" data-kind="candidate">Кандидаты</a></div>
+  <a href="#" class="btn plain sm" id="select-visible">Выбрать видимых</a>
+</div>
+<div class="list" style="margin-bottom:24px">
+  {% for u in users %}
+  <label class="row" data-user-row data-user-kind="{% if u.is_candidate %}candidate{% else %}employee{% endif %}" data-search="{{ u.get_full_name|lower }} {{ u.username|lower }} {{ u.position|lower }}">
+    <input class="check" type="checkbox" name="users" value="{{ u.pk }}"{% if u.pk in checked %} checked{% endif %}{% if u.pk in disabled %} disabled{% endif %}>
+    <span class="avatar">{{ u.initials }}</span>
+    <div class="grow"><div class="row-title">{{ u.get_full_name }}</div><div class="row-sub">{{ u.kind_label }}{% if u.position %} · {{ u.position }}{% endif %}</div></div>
+    {% if u.pk in disabled %}<span class="badge blue">уже назначен</span>{% endif %}
+  </label>
+  {% empty %}<div class="empty">Нет активных пользователей. <a href="{% url 'manage:user_create' %}">Создать пользователя</a></div>
+  {% endfor %}
+</div>

@@ -1,0 +1,19 @@
+{% extends "app.html" %}{% load kmd %}
+{% block title %}Группы курсов{% endblock %}
+{% block content %}
+<div class="page-head"><div class="titles"><h1 class="large-title">Группы курсов</h1><div class="subtitle">Группа объединяет несколько курсов. Доступ к группе открывает все её курсы.</div></div>
+<a class="btn" href="{% url 'manage:group_create' %}">{% icon "plus" "sm" %}Новая группа</a></div>
+{% if groups %}
+<div class="list">
+  {% for g in groups %}
+  <a class="row with-icon" href="{% url 'manage:group_detail' g.pk %}">
+    <span class="tile">{% icon "folder" %}</span>
+    <div class="grow"><div class="row-title">{{ g.title }}</div><div class="row-sub">{{ g.n_courses|plural:"курс,курса,курсов" }} · {{ g.n_users|plural:"пользователь,пользователя,пользователей" }} с доступом</div></div>
+    {% icon "chevron.right" "sm chev" %}
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty">{% icon "folder" %}<div class="empty-title">Групп пока нет</div>Создайте первую группу, например «Адаптация новых сотрудников».<div style="margin-top:14px"><a class="btn tinted" href="{% url 'manage:group_create' %}">Создать группу</a></div></div>
+{% endif %}
+{% endblock %}

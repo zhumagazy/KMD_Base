@@ -1,0 +1,1 @@
+{% if a.status == "in_progress" %}<span class="badge orange">В процессе</span>{% elif a.needs_review %}<span class="badge orange">Проверить · {{ a.percent|floatformat:0 }}%</span>{% elif a.passed %}<span class="badge green">Сдан · {{ a.percent|floatformat:0 }}%</span>{% else %}<span class="badge red">Не сдан · {{ a.percent|floatformat:0 }}%</span>{% endif %}
