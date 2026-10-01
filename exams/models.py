@@ -40,6 +40,7 @@ class Test(models.Model):
         help_text="Тест откроется, когда пользователь изучит все материалы привязанного курса.",
     )
     is_active = models.BooleanField("Активен", default=True)
+    source_hash = models.CharField(max_length=64, blank=True, editable=False)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, related_name="+", on_delete=models.SET_NULL, null=True, blank=True
     )

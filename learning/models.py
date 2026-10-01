@@ -77,6 +77,7 @@ class Material(models.Model):
     url = models.URLField("Ссылка / видео", blank=True, help_text="YouTube, Vimeo или любая другая ссылка.")
     duration_minutes = models.PositiveIntegerField("Время на изучение, мин", null=True, blank=True)
     order = models.PositiveIntegerField("Порядок", default=0)
+    source_hash = models.CharField(max_length=64, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -91,6 +92,18 @@ class Material(models.Model):
     @property
     def filename(self):
         return self.file.name.rsplit("/", 1)[-1] if self.file else ""
+
+    @property
+    def extension(self):
+        return ("." + self.filename.rsplit(".", 1)[-1].lower()) if "." in self.filename else ""
+
+    @property
+    def is_video_file(self):
+        return self.extension in (".mp4", ".webm", ".mov", ".m4v")
+
+    @property
+    def is_pdf(self):
+        return self.extension == ".pdf"
 
     @property
     def body_html(self):

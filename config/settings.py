@@ -104,6 +104,9 @@ LOGOUT_REDIRECT_URL = "login"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Разрешаем встраивать свои же файлы (PDF) во фрейм на странице материала.
+X_FRAME_OPTIONS = "SAMEORIGIN"
+
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True

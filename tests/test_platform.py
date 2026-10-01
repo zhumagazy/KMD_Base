@@ -207,3 +207,40 @@ class PlatformTests(TestCase):
         for url in [reverse("home"), reverse("courses"), reverse("my_tests"), reverse("test_intro", args=[a.pk])]:
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)
+
+
+class ImportTests(TestCase):
+    def test_import_example_content(self):
+        import tempfile
+        from pathlib import Path
+
+        from django.test import override_settings
+
+        from exams.models import Test
+        from learning.importer import Importer, parse_test
+
+        root = Path(__file__).resolve().parent.parent / "content_example"
+        with tempfile.TemporaryDirectory() as media, override_settings(MEDIA_ROOT=media):
+            report = Importer(root).run()
+            self.assertEqual(report.errors, [])
+            group = CourseGroup.objects.get(title="Адаптация")
+            self.assertEqual(group.courses.count(), 2)
+            self.assertTrue(Material.objects.filter(title="СИЗ", body__contains="<table>").exists())
+            self.assertEqual(Material.objects.get(title="Приветствие директора").kind, Material.Kind.VIDEO)
+            self.assertTrue(Material.objects.get(title="Инструкция").file.name.endswith(".pdf"))
+            # «Тестирование оборудования.txt» — материал, а не тест
+            self.assertTrue(Material.objects.filter(title="Тестирование оборудования").exists())
+            t = Test.objects.get(title="Тест: знакомство с компанией")
+            self.assertEqual(t.time_limit_minutes, 10)
+            self.assertEqual([q.kind for q in t.questions.all()], ["single", "multiple", "text"])
+            self.assertEqual(Test.objects.get(title="Входной тест для кандидатов").course, None)
+            # Повторный импорт ничего не дублирует и не трогает правки на сайте.
+            Material.objects.filter(title="О компании").update(body="Отредактировано на сайте")
+            again = Importer(root).run()
+            self.assertEqual(again.created, [])
+            self.assertEqual(Material.objects.get(title="О компании").body, "Отредактировано на сайте")
+            self.assertEqual(Material.objects.count(), 5)
+
+        spec = parse_test("? Вопрос\n* да\n- нет\nБаллы: 2")
+        self.assertEqual(spec["questions"][0]["points"], 2)
+        self.assertEqual(spec["questions"][0]["choices"], [("да", True), ("нет", False)])
