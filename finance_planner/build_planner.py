@@ -24,6 +24,7 @@ MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май"
 # Названия листов
 S_HOME = "🏠 Главная"
 S_EXP = "💸 Расходы"
+S_DAY = "🧾 Дневник трат"
 S_INC = "💰 Доходы"
 S_MON = "📅 По месяцам"
 S_YEAR = "📊 По годам"
@@ -165,6 +166,7 @@ wb = Workbook()
 home = wb.active
 home.title = S_HOME
 exp = wb.create_sheet(S_EXP)
+day = wb.create_sheet(S_DAY)
 inc = wb.create_sheet(S_INC)
 mon = wb.create_sheet(S_MON)
 yr = wb.create_sheet(S_YEAR)
@@ -175,7 +177,7 @@ ref = wb.create_sheet(S_REF)
 title(ref, "📚 Справочник",
       "Здесь живут все выпадающие списки. Добавляйте свои статьи в пустые жёлтые строки — "
       "они сразу появятся в списках листов «Расходы» и «Доходы».", C["ref"], 17)
-widths(ref, [10, 14, 3, 24, 13, 34, 3, 30, 3, 22, 3, 30, 3, 18, 18, 3, 16])
+widths(ref, [10, 14, 3, 24, 13, 34, 3, 26, 24, 3, 22, 3, 30, 3, 18, 18, 3, 16, 3, 18])
 
 CATS = [
     ("🛒 Нужда", "Нет", "Еда, жильё, транспорт — без этого никак"),
@@ -200,6 +202,15 @@ INC_ITEMS = ["Основная работа", "Фриланс-проект", "К
 EXP_STATUS = ["⏳ Запланировано", "✅ Выполнено", "⏸ Отложено", "❌ Отменено"]
 INC_STATUS = ["⏳ Ожидается", "✅ Получено", "❌ Не получено"]
 PRIORITY = ["🔥 Высокий", "⭐ Средний", "💤 Низкий"]
+PAY_METHODS = ["💳 Карта", "💵 Наличные", "📱 Перевод", "🔁 Автоплатёж"]
+EXP_ITEM_CAT = {
+    "Продукты": "🛒 Нужда", "Аренда / ипотека": "🧾 Обязательный платёж",
+    "Коммунальные услуги": "🧾 Обязательный платёж", "Транспорт / такси": "🛒 Нужда",
+    "Связь и интернет": "🧾 Обязательный платёж", "Одежда": "🛒 Нужда",
+    "Кафе и рестораны": "🎉 Развлечения", "Путешествия": "🌟 Мечта", "Техника": "🍭 Хотелка",
+    "Подушка безопасности": "🏦 Накопление", "Подарки": "🎁 Подарок", "Спорт": "❤️ Здоровье",
+    "Курсы": "🎓 Образование",
+}
 
 R0 = 4  # строка заголовков справочника
 
@@ -247,11 +258,15 @@ ref.cell(R0 - 1, 4, "Категория с «Да» автоматически �
     font(8, italic=True, color=C["muted"])
 
 ref_list(8, "📝 Статьи расходов", EXP_ITEMS, 100, "lst_exp_items", editable=True)
-ref_list(10, "💼 Тип дохода", INC_TYPES, 20, "lst_inc_types", editable=True)
-ref_list(12, "💰 Источники дохода", INC_ITEMS, 100, "lst_inc_items", editable=True)
-ref_list(14, "🚦 Статус расхода", EXP_STATUS, 4, "lst_exp_status")
-ref_list(15, "🚦 Статус дохода", INC_STATUS, 3, "lst_inc_status")
-ref_list(17, "🎯 Приоритет", PRIORITY, 3, "lst_priority")
+ref_list(9, "🏷 Категория статьи\n(для дневника)", [EXP_ITEM_CAT[x] for x in EXP_ITEMS], 100,
+         "lst_exp_item_cat", editable=True)
+add_list_validation(ref, f"I{R0 + 1}:I{R0 + 100}", "lst_cats")
+ref_list(11, "💼 Тип дохода", INC_TYPES, 20, "lst_inc_types", editable=True)
+ref_list(13, "💰 Источники дохода", INC_ITEMS, 100, "lst_inc_items", editable=True)
+ref_list(15, "🚦 Статус расхода", EXP_STATUS, 4, "lst_exp_status")
+ref_list(16, "🚦 Статус дохода", INC_STATUS, 3, "lst_inc_status")
+ref_list(18, "🎯 Приоритет", PRIORITY, 3, "lst_priority")
+ref_list(20, "💳 Способ оплаты", PAY_METHODS, 10, "lst_pay", editable=True)
 ref.freeze_panes = "A5"
 
 DONE_EXP = EXP_STATUS[1]
@@ -261,19 +276,21 @@ FAIL_INC = INC_STATUS[2]
 
 # ---------------------------------------------------------------- РАСХОДЫ
 EXP_HEAD = ["📆 Год", "🗓 Месяц", "📝 Статья", "🏷 Категория", "✏️ Описание", "🎯 Приоритет",
-            "📝 ПЛАН, ₸", "✅ ФАКТ, ₸", "± Разница\n(план − факт)", "🚦 Статус", "💬 Комментарий",
-            "служ. №хотелки"]
-EXP_KINDS = [None] * 6 + ["plan", "fact", None, None, None, None]
+            "📝 ПЛАН, ₸", "✍️ ФАКТ\nвручную, ₸", "🧾 Из дневника\n(авто), ₸", "✅ ФАКТ\nитог, ₸",
+            "± Разница\n(план − факт)", "🚦 Статус", "💬 Комментарий", "служ. №хотелки", "служ. первая"]
+EXP_KINDS = [None] * 6 + ["plan", "fact", "fact", "fact", None, None, None, None, None]
 title(exp, "💸 Расходы — план и факт",
-      "Одна строка = одна трата. Синяя колонка «ПЛАН» — сколько собираетесь потратить, зелёная «ФАКТ» — "
-      "сколько реально ушло. Статус «✅ Выполнено» зачёркивает строку. Год, месяц, статья, категория — из списков.",
-      C["exp"], 11)
+      "Одна строка = одна запланированная трата. «ПЛАН» — сколько собираетесь потратить. ФАКТ считается сам "
+      "из «🧾 Дневника трат» по той же статье и месяцу; если ввести «ФАКТ вручную» — он заменит сумму из дневника. "
+      "Статус «✅ Выполнено» зачёркивает строку.",
+      C["exp"], 13)
 header(exp, 4, EXP_HEAD, C["exp"], EXP_KINDS)
-widths(exp, [9, 12, 22, 22, 32, 13, 14, 14, 14, 17, 26, 6])
-exp.column_dimensions["L"].hidden = True
+widths(exp, [9, 12, 22, 22, 30, 13, 14, 14, 15, 14, 14, 17, 24, 6, 6])
+exp.column_dimensions["N"].hidden = True
+exp.column_dimensions["O"].hidden = True
 
 EXP_EXAMPLES = [
-    (2026, "Октябрь", "Продукты", "🛒 Нужда", "Продукты на месяц", "🔥 Высокий", 120000, 131500, DONE_EXP),
+    (2026, "Октябрь", "Продукты", "🛒 Нужда", "Продукты на месяц (факт — из дневника)", "🔥 Высокий", 120000, None, EXP_STATUS[0]),
     (2026, "Октябрь", "Аренда / ипотека", "🧾 Обязательный платёж", "Аренда квартиры", "🔥 Высокий", 250000, 250000, DONE_EXP),
     (2026, "Октябрь", "Подушка безопасности", "🏦 Накопление", "10% от дохода", "⭐ Средний", 60000, 60000, DONE_EXP),
     (2026, "Октябрь", "Техника", "🍭 Хотелка", "Беспроводные наушники", "⭐ Средний", 45000, 42000, DONE_EXP),
@@ -290,17 +307,26 @@ for r in range(EXP_FIRST, EXP_LAST + 1):
     if ex:
         for j, v in enumerate(ex[:8]):
             exp.cell(r, j + 1, v)
-        exp.cell(r, 10, ex[8])
-    exp.cell(r, 9, f'=IF(OR(G{r}="",H{r}=""),"",G{r}-H{r})')
-    exp.cell(r, 12, f'=IF(IFERROR(INDEX(lst_cat_wish,MATCH(D{r},lst_cats,0))="Да",FALSE),MAX($L$4:L{r - 1})+1,"")')
-    for c in range(1, 13):
+        exp.cell(r, 12, ex[8])
+    # O: первая неотменённая строка с такими же год+месяц+статья (чтобы дневник не считался дважды)
+    exp.cell(r, 15, f'=IF(OR(A{r}="",B{r}="",C{r}="",L{r}="{CANCEL_EXP}"),0,'
+                    f'IF(COUNTIFS($A$4:A{r - 1},A{r},$B$4:B{r - 1},B{r},$C$4:C{r - 1},C{r},$L$4:L{r - 1},"<>{CANCEL_EXP}")=0,1,0))')
+    exp.cell(r, 9, f'=IF(O{r}=1,SUMIFS(day_amt,day_year,A{r},day_month,B{r},day_item,C{r}),"")')
+    exp.cell(r, 10, f'=IF(H{r}<>"",H{r},IF(N(I{r})=0,"",I{r}))')
+    exp.cell(r, 11, f'=IF(OR(G{r}="",J{r}=""),"",G{r}-J{r})')
+    exp.cell(r, 14, f'=IF(IFERROR(INDEX(lst_cat_wish,MATCH(D{r},lst_cats,0))="Да",FALSE),MAX($N$4:N{r - 1})+1,"")')
+    for c in range(1, 16):
         cell = exp.cell(r, c)
         cell.border = BORDER
-        cell.font = font(color="0000FF" if c not in (9, 12) else C["text"])
+        cell.font = font(color="0000FF" if c not in (9, 10, 11, 14, 15) else C["text"])
         cell.alignment = Alignment(vertical="center", horizontal="center" if c in (1, 2, 6) else None)
     exp.cell(r, 7).fill = fill(C["plan_fill"])
     exp.cell(r, 8).fill = fill(C["fact_fill"])
-    for c in (7, 8, 9):
+    exp.cell(r, 9).fill = fill("F3FBF5")
+    exp.cell(r, 9).font = font(color=C["muted"], italic=True)
+    exp.cell(r, 10).fill = fill(C["fact_fill"])
+    exp.cell(r, 10).font = font(bold=True)
+    for c in (7, 8, 9, 10, 11):
         exp.cell(r, c).number_format = MONEY
 
 rng = lambda col: f"{col}{EXP_FIRST}:{col}{EXP_LAST}"  # noqa: E731
@@ -309,43 +335,190 @@ add_list_validation(exp, rng("B"), "lst_months")
 add_list_validation(exp, rng("C"), "lst_exp_items")
 add_list_validation(exp, rng("D"), "lst_cats")
 add_list_validation(exp, rng("F"), "lst_priority")
-add_list_validation(exp, rng("J"), "lst_exp_status")
+add_list_validation(exp, rng("L"), "lst_exp_status")
 
 for nm, col in (("exp_year", "A"), ("exp_month", "B"), ("exp_item", "C"), ("exp_cat", "D"),
-                ("exp_desc", "E"), ("exp_prio", "F"), ("exp_plan", "G"), ("exp_fact", "H"),
-                ("exp_status", "J"), ("exp_wishno", "L")):
+                ("exp_desc", "E"), ("exp_prio", "F"), ("exp_plan", "G"), ("exp_fact", "J"),
+                ("exp_status", "L"), ("exp_wishno", "N")):
     add_name(wb, nm, S_EXP, f"${col}${EXP_FIRST}:${col}${EXP_LAST}")
 
-data = f"A{EXP_FIRST}:K{EXP_LAST}"
+data = f"A{EXP_FIRST}:M{EXP_LAST}"
 exp.conditional_formatting.add(data, FormulaRule(
-    formula=[f'$J{EXP_FIRST}="{DONE_EXP}"'], stopIfTrue=True,
+    formula=[f'$L{EXP_FIRST}="{DONE_EXP}"'], stopIfTrue=True,
     font=Font(strike=True, color="8D99AE"), fill=fill(C["done_fill"])))
 exp.conditional_formatting.add(data, FormulaRule(
-    formula=[f'$J{EXP_FIRST}="{CANCEL_EXP}"'], stopIfTrue=True,
+    formula=[f'$L{EXP_FIRST}="{CANCEL_EXP}"'], stopIfTrue=True,
     font=Font(strike=True, italic=True, color="C0C0C0")))
-exp.conditional_formatting.add(f"H{EXP_FIRST}:H{EXP_LAST}", FormulaRule(
-    formula=[f'AND($H{EXP_FIRST}<>"",$G{EXP_FIRST}<>"",$H{EXP_FIRST}>$G{EXP_FIRST})'],
+exp.conditional_formatting.add(f"J{EXP_FIRST}:J{EXP_LAST}", FormulaRule(
+    formula=[f'AND($J{EXP_FIRST}<>"",$G{EXP_FIRST}<>"",$J{EXP_FIRST}>$G{EXP_FIRST})'],
     font=Font(bold=True, color=C["neg"])))
-exp.conditional_formatting.add(f"I{EXP_FIRST}:I{EXP_LAST}", CellIsRule(
+exp.conditional_formatting.add(f"I{EXP_FIRST}:I{EXP_LAST}", FormulaRule(
+    formula=[f'AND($H{EXP_FIRST}<>"",N($I{EXP_FIRST})>0)'],
+    font=Font(strike=True, color="C0C0C0")))
+exp.conditional_formatting.add(f"K{EXP_FIRST}:K{EXP_LAST}", CellIsRule(
     operator="lessThan", formula=["0"], font=Font(bold=True, color=C["neg"])))
-exp.conditional_formatting.add(f"I{EXP_FIRST}:I{EXP_LAST}", CellIsRule(
+exp.conditional_formatting.add(f"K{EXP_FIRST}:K{EXP_LAST}", CellIsRule(
     operator="greaterThan", formula=["0"], font=Font(bold=True, color=C["pos"])))
 exp.conditional_formatting.add(f"F{EXP_FIRST}:F{EXP_LAST}", FormulaRule(
     formula=[f'$F{EXP_FIRST}="{PRIORITY[0]}"'], fill=fill("FFE3E3")))
 exp.freeze_panes = "C5"
-exp.auto_filter.ref = f"A4:K{EXP_LAST}"
-exp["G3"] = f"=SUBTOTAL(9,G{EXP_FIRST}:G{EXP_LAST})"
-exp["H3"] = f"=SUBTOTAL(9,H{EXP_FIRST}:H{EXP_LAST})"
+exp.auto_filter.ref = f"A4:M{EXP_LAST}"
 exp["F3"] = "Σ видимых →"
 exp["F3"].font = font(9, True, C["muted"])
 exp["F3"].alignment = Alignment(horizontal="right")
-for c in ("G3", "H3"):
-    exp[c].number_format = MONEY
-    exp[c].font = font(10, True)
-exp["G3"].fill = fill(C["plan_fill"])
-exp["H3"].fill = fill(C["fact_fill"])
+for col_, bg in (("G", C["plan_fill"]), ("H", C["fact_fill"]), ("I", "F3FBF5"), ("J", C["fact_fill"])):
+    c = exp[f"{col_}3"]
+    c.value = f"=SUBTOTAL(9,{col_}{EXP_FIRST}:{col_}{EXP_LAST})"
+    c.number_format = MONEY
+    c.font = font(10, True)
+    c.fill = fill(bg)
 exp["G4"].comment = Comment("Сумма, которую ПЛАНИРУЕТЕ потратить. Заполняется заранее.", "Планер")
-exp["H4"].comment = Comment("Сколько РЕАЛЬНО потратили. Заполняется по факту.", "Планер")
+exp["H4"].comment = Comment("Необязательно. Если заполнить — заменяет сумму из дневника "
+                            "(удобно для разовых крупных покупок).", "Планер")
+exp["I4"].comment = Comment("Считается сам: сумма записей «🧾 Дневника трат» с той же статьёй, "
+                            "годом и месяцем.", "Планер")
+exp["J4"].comment = Comment("Итоговый факт = «вручную», а если пусто — «из дневника». "
+                            "Именно он идёт в сводки.", "Планер")
+
+# ---------------------------------------------------------------- ДНЕВНИК ТРАТ
+DAY_FIRST, DAY_LAST = 5, 5004
+DAY_HEAD = ["📅 Дата", "День", "📆 Год", "🗓 Месяц", "📝 Статья", "🏷 Категория\n(авто)",
+            "✏️ Что купили", "💸 Сумма, ₸", "💳 Оплата", "📌 В плане?"]
+title(day, "🧾 Дневник трат — записывайте каждую покупку",
+      "Вводите только 4 поля: ДАТА, СТАТЬЯ, СУММА (и по желанию — что купили и способ оплаты). Год, месяц, "
+      "категория подставятся сами. Траты по статьям из плана попадут в ФАКТ листа «Расходы», остальные — "
+      "в сводки как «⚡ вне плана».", C["exp"], 10)
+header(day, 4, DAY_HEAD, C["exp"], [None] * 7 + ["fact", None, None])
+widths(day, [12, 6, 8, 11, 22, 22, 30, 14, 14, 13, 3, 26, 16, 3])
+WEEKDAYS = '"Пн","Вт","Ср","Чт","Пт","Сб","Вс"'
+DAY_EXAMPLES = [
+    ("2026-10-01", "Продукты", "Супермаркет", 12400, "💳 Карта"),
+    ("2026-10-02", "Транспорт / такси", "Такси на работу", 1800, "💳 Карта"),
+    ("2026-10-03", "Кафе и рестораны", "Кофе с коллегами", 3500, "📱 Перевод"),
+    ("2026-10-03", "Продукты", "Рынок", 8900, "💵 Наличные"),
+    ("2026-10-04", "Продукты", "Хлеб, молоко", 4300, "💳 Карта"),
+    ("2026-10-04", "Связь и интернет", "Мобильная связь", 5990, "🔁 Автоплатёж"),
+]
+import datetime as _dt
+for r in range(DAY_FIRST, DAY_LAST + 1):
+    ex = DAY_EXAMPLES[r - DAY_FIRST] if r - DAY_FIRST < len(DAY_EXAMPLES) else None
+    if ex:
+        day.cell(r, 1, _dt.date.fromisoformat(ex[0]))
+        day.cell(r, 5, ex[1])
+        day.cell(r, 7, ex[2])
+        day.cell(r, 8, ex[3])
+        day.cell(r, 9, ex[4])
+    day.cell(r, 2, f'=IF(A{r}="","",CHOOSE(WEEKDAY(A{r},2),{WEEKDAYS}))')
+    day.cell(r, 3, f'=IF(A{r}="","",YEAR(A{r}))')
+    day.cell(r, 4, f'=IF(A{r}="","",INDEX(lst_months,MONTH(A{r})))')
+    lk = f"INDEX(lst_exp_item_cat,MATCH(E{r},lst_exp_items,0))"
+    day.cell(r, 6, f'=IF(E{r}="","",IFERROR(IF({lk}="","❔ Без категории",{lk}),"❔ Без категории"))')
+    day.cell(r, 10, f'=IF(OR(A{r}="",H{r}=""),"",IF(COUNTIFS(exp_year,C{r},exp_month,D{r},exp_item,E{r},'
+                    f'exp_status,"<>{CANCEL_EXP}")>0,1,0))')
+    for c in range(1, 11):
+        cell = day.cell(r, c)
+        cell.border = BORDER
+        cell.font = font(color="0000FF" if c in (1, 5, 7, 8, 9) else C["muted"])
+        cell.alignment = Alignment(vertical="center", horizontal="center" if c in (1, 2, 3, 10) else None)
+    day.cell(r, 1).number_format = "DD.MM.YYYY"
+    day.cell(r, 1).fill = fill(C["input_fill"])
+    day.cell(r, 5).fill = fill(C["input_fill"])
+    day.cell(r, 8).fill = fill(C["fact_fill"])
+    day.cell(r, 8).number_format = MONEY
+    day.cell(r, 8).font = font(bold=True, color="0000FF")
+    day.cell(r, 10).number_format = '"✅ в плане";;"⚡ вне плана"'
+
+rng = lambda col: f"{col}{DAY_FIRST}:{col}{DAY_LAST}"  # noqa: E731
+dv = DataValidation(type="date", operator="between", formula1="DATE(2026,1,1)",
+                    formula2="DATE(2030,12,31)", allow_blank=True)
+dv.error = "Введите дату с 01.01.2026 по 31.12.2030, например 05.10.2026"
+dv.errorTitle = "Неверная дата"
+dv.showErrorMessage = True
+dv.prompt = "Дата покупки, например 05.10.2026 (Ctrl+; — сегодня)"
+dv.showInputMessage = True
+day.add_data_validation(dv)
+dv.add(rng("A"))
+add_list_validation(day, rng("E"), "lst_exp_items")
+add_list_validation(day, rng("I"), "lst_pay")
+for nm, col in (("day_date", "A"), ("day_year", "C"), ("day_month", "D"), ("day_item", "E"),
+                ("day_cat", "F"), ("day_amt", "H"), ("day_inplan", "J")):
+    add_name(wb, nm, S_DAY, f"${col}${DAY_FIRST}:${col}${DAY_LAST}")
+
+# подсветка: сегодняшние записи, вне плана, выходные
+day.conditional_formatting.add(f"A{DAY_FIRST}:J{DAY_LAST}", FormulaRule(
+    formula=[f"$A{DAY_FIRST}=TODAY()"], fill=fill(C["today"]), font=Font(bold=True)))
+day.conditional_formatting.add(f"J{DAY_FIRST}:J{DAY_LAST}", CellIsRule(
+    operator="equal", formula=["0"], font=Font(bold=True, color="E76F51"), fill=fill("FFF1EC")))
+day.conditional_formatting.add(f"J{DAY_FIRST}:J{DAY_LAST}", CellIsRule(
+    operator="equal", formula=["1"], font=Font(color=C["pos"])))
+day.conditional_formatting.add(f"B{DAY_FIRST}:B{DAY_LAST}", FormulaRule(
+    formula=[f'OR($B{DAY_FIRST}="Сб",$B{DAY_FIRST}="Вс")'], font=Font(bold=True, color=C["neg"])))
+day.conditional_formatting.add(f"F{DAY_FIRST}:F{DAY_LAST}", FormulaRule(
+    formula=[f'$F{DAY_FIRST}="❔ Без категории"'], font=Font(italic=True, color=C["neg"])))
+day.freeze_panes = "B5"
+day.auto_filter.ref = f"A4:J{DAY_LAST}"
+day["G3"] = "Σ видимых →"
+day["G3"].font = font(9, True, C["muted"])
+day["G3"].alignment = Alignment(horizontal="right")
+day["H3"] = f"=SUBTOTAL(9,H{DAY_FIRST}:H{DAY_LAST})"
+day["H3"].number_format = MONEY
+day["H3"].font = font(10, True)
+day["H3"].fill = fill(C["fact_fill"])
+
+# Панель «Этот месяц» справа
+TY, TM = "YEAR(TODAY())", "INDEX(lst_months,MONTH(TODAY()))"
+MPOS = f"((YEAR(TODAY())-{YEARS[0]})*12+MONTH(TODAY()))"
+pc = day.cell(4, 12, "📊 Этот месяц")
+pc.font = Font(name=FONT, size=12, bold=True, color="FFFFFF")
+pc.fill = fill(C["exp"])
+day.cell(4, 13).fill = fill(C["exp"])
+day.cell(4, 13, f'={TM}&" "&{TY}').font = Font(name=FONT, bold=True, color="FFFFFF")
+panel = [
+    ("📅 Сегодня", "=SUMIFS(day_amt,day_date,TODAY())", MONEY),
+    ("🗓 С начала месяца", f"=SUMIFS(day_amt,day_year,{TY},day_month,{TM})", MONEY),
+    ("📊 В среднем за день", "=M6/DAY(TODAY())", MONEY),
+    ("🔮 Прогноз на месяц", "=M7*DAY(EOMONTH(TODAY(),0))", MONEY),
+    ("⚡ Из них вне плана", f"=SUMIFS(day_amt,day_year,{TY},day_month,{TM},day_inplan,0)", MONEY),
+    ("📝 План расходов", f"=IFERROR(INDEX('{S_MON}'!$G$5:$G$64,{MPOS}),0)", MONEY),
+    ("✅ Факт расходов (всего)", f"=IFERROR(INDEX('{S_MON}'!$H$5:$H$64,{MPOS}),0)", MONEY),
+    ("💰 Осталось по бюджету", "=M10-M11", MONEY),
+]
+for i, (lbl, f, fmt) in enumerate(panel):
+    r = 5 + i
+    a_ = day.cell(r, 12, lbl)
+    a_.font = font(10, True)
+    a_.border = BORDER
+    v = day.cell(r, 13, f)
+    v.number_format = fmt
+    v.font = Font(name=FONT, size=11, bold=True, color="008000")
+    v.border = BORDER
+    v.fill = fill(C["fact_fill"] if i not in (5,) else C["plan_fill"])
+day.conditional_formatting.add("M12", CellIsRule(operator="lessThan", formula=["0"],
+                                                 font=Font(bold=True, color=C["neg"]), fill=fill("FFE3E3")))
+day.conditional_formatting.add("M9", CellIsRule(operator="greaterThan", formula=["0"],
+                                                font=Font(bold=True, color="E76F51")))
+day.cell(13, 12, "M: «Факт расходов» включает и дневник, и ручной факт из «Расходов»").font = \
+    font(8, italic=True, color=C["muted"])
+# По категориям за этот месяц
+hc = day.cell(15, 12, "🏷 По категориям (этот месяц)")
+hc.font = Font(name=FONT, size=11, bold=True, color="FFFFFF")
+hc.fill = fill(C["exp"])
+day.cell(15, 13, "₸").fill = fill(C["exp"])
+day.cell(15, 13).font = Font(name=FONT, bold=True, color="FFFFFF")
+for i in range(16):
+    r = 16 + i
+    if i < 15:
+        day.cell(r, 12, f"=IF('{S_REF}'!D{R0 + 1 + i}=\"\",\"\",'{S_REF}'!D{R0 + 1 + i})")
+    else:
+        day.cell(r, 12, "❔ Без категории")
+    day.cell(r, 13, f'=IF(L{r}="","",SUMIFS(day_amt,day_cat,L{r},day_year,{TY},day_month,{TM}))')
+    day.cell(r, 12).border = BORDER
+    day.cell(r, 13).border = BORDER
+    day.cell(r, 12).font = font()
+    day.cell(r, 13).font = font(bold=True)
+    day.cell(r, 13).number_format = MONEY
+day.conditional_formatting.add("M16:M31", DataBarRule(start_type="num", start_value=0,
+                                                      end_type="max", color="E76F51"))
 
 # ---------------------------------------------------------------- ДОХОДЫ
 INC_HEAD = ["📆 Год", "🗓 Месяц", "💰 Источник", "💼 Тип дохода", "✏️ Описание",
@@ -422,13 +595,13 @@ inc["G3"].fill = fill(C["fact_fill"])
 MON_HEAD = ["📆 Год", "🗓 Месяц", "Подпись", "💰 Доход\nПЛАН", "💰 Доход\nФАКТ", "% дохода\nполучено",
             "💸 Расход\nПЛАН", "💸 Расход\nФАКТ", "% бюджета\nпотрачено", "⚖️ Остаток\nПЛАН",
             "⚖️ Остаток\nФАКТ", "🏦 Накоплено\nПЛАН (нараст.)", "🏦 Накоплено\nФАКТ (нараст.)",
-            "🏦 Отложено в\n«Накопление» (факт)"]
-MON_KINDS = [None, None, None, "plan", "fact", None, "plan", "fact", None, "plan", "fact", "plan", "fact", "fact"]
+            "🏦 Отложено в\n«Накопление» (факт)", "⚡ Вне плана\n(из дневника)"]
+MON_KINDS = [None, None, None, "plan", "fact", None, "plan", "fact", None, "plan", "fact", "plan", "fact", "fact", "fact"]
 title(mon, "📅 Сводка по месяцам: январь 2026 → декабрь 2030",
       "Считается автоматически из листов «Расходы» и «Доходы» — здесь ничего вводить не нужно. "
-      "Текущий месяц подсвечен жёлтым. Отменённые траты в план не входят.", C["mon"], 14)
+      "Факт расходов = ФАКТ из «Расходов» + траты «Дневника» вне плана. Текущий месяц подсвечен жёлтым.", C["mon"], 15)
 header(mon, 4, MON_HEAD, C["mon"], MON_KINDS)
-widths(mon, [8, 12, 9, 14, 14, 11, 14, 14, 11, 14, 14, 16, 16, 16])
+widths(mon, [8, 12, 9, 14, 14, 11, 14, 14, 11, 14, 14, 16, 16, 16, 15])
 mon.column_dimensions["C"].hidden = True
 M_FIRST = 5
 r = M_FIRST
@@ -441,7 +614,8 @@ for y in YEARS:
         mon.cell(r, 5, f"=SUMIFS(inc_fact,inc_year,A{r},inc_month,B{r})")
         mon.cell(r, 6, f'=IF(D{r}=0,"",E{r}/D{r})')
         mon.cell(r, 7, f'=SUMIFS(exp_plan,exp_year,A{r},exp_month,B{r},exp_status,"<>{CANCEL_EXP}")')
-        mon.cell(r, 8, f"=SUMIFS(exp_fact,exp_year,A{r},exp_month,B{r})")
+        mon.cell(r, 8, f"=SUMIFS(exp_fact,exp_year,A{r},exp_month,B{r})+O{r}")
+        mon.cell(r, 15, f"=SUMIFS(day_amt,day_year,A{r},day_month,B{r},day_inplan,0)")
         mon.cell(r, 9, f'=IF(G{r}=0,"",H{r}/G{r})')
         mon.cell(r, 10, f"=D{r}-G{r}")
         mon.cell(r, 11, f"=E{r}-H{r}")
@@ -450,9 +624,9 @@ for y in YEARS:
         mon.cell(r, 14, f'=SUMIFS(exp_fact,exp_year,A{r},exp_month,B{r},exp_cat,"{CATS[6][0]}")')
         r += 1
 M_LAST = r - 1
-style_range(mon, M_FIRST, M_LAST, 1, 14)
+style_range(mon, M_FIRST, M_LAST, 1, 15)
 for rr in range(M_FIRST, M_LAST + 1):
-    for c in (4, 5, 7, 8, 10, 11, 12, 13, 14):
+    for c in (4, 5, 7, 8, 10, 11, 12, 13, 14, 15):
         mon.cell(rr, c).number_format = MONEY
     for c in (6, 9):
         mon.cell(rr, c).number_format = PCT
@@ -463,24 +637,24 @@ for rr in range(M_FIRST, M_LAST + 1):
         elif kind == "fact":
             mon.cell(rr, c).fill = fill(C["fact_fill"])
     if rr != M_FIRST and mon.cell(rr, 2).value == "Январь":  # разделитель лет
-        for c in range(1, 15):
+        for c in range(1, 16):
             mon.cell(rr, c).border = Border(left=thin, right=thin, bottom=thin,
                                             top=Side(style="medium", color=C["mon"]))
 # итог
 mon.cell(M_LAST + 1, 1, "Σ ИТОГО")
 mon.merge_cells(start_row=M_LAST + 1, start_column=1, end_row=M_LAST + 1, end_column=3)
-for c in (4, 5, 7, 8, 10, 11, 14):
+for c in (4, 5, 7, 8, 10, 11, 14, 15):
     L = get_column_letter(c)
     mon.cell(M_LAST + 1, c, f"=SUM({L}{M_FIRST}:{L}{M_LAST})")
 mon.cell(M_LAST + 1, 6, f'=IF(D{M_LAST + 1}=0,"",E{M_LAST + 1}/D{M_LAST + 1})')
 mon.cell(M_LAST + 1, 9, f'=IF(G{M_LAST + 1}=0,"",H{M_LAST + 1}/G{M_LAST + 1})')
-style_range(mon, M_LAST + 1, M_LAST + 1, 1, 14, bg="E3ECFF", fnt=font(10, True))
-for c in (4, 5, 7, 8, 10, 11, 14):
+style_range(mon, M_LAST + 1, M_LAST + 1, 1, 15, bg="E3ECFF", fnt=font(10, True))
+for c in (4, 5, 7, 8, 10, 11, 14, 15):
     mon.cell(M_LAST + 1, c).number_format = MONEY
 for c in (6, 9):
     mon.cell(M_LAST + 1, c).number_format = PCT
 
-mrange = f"A{M_FIRST}:N{M_LAST}"
+mrange = f"A{M_FIRST}:O{M_LAST}"
 mon.conditional_formatting.add(mrange, FormulaRule(
     formula=[f"AND($A{M_FIRST}=YEAR(TODAY()),MATCH($B{M_FIRST},lst_months,0)=MONTH(TODAY()))"],
     fill=fill(C["today"]), font=Font(bold=True)))
@@ -496,26 +670,26 @@ mon.conditional_formatting.add(f"I{M_FIRST}:I{M_LAST}", CellIsRule(
 mon.conditional_formatting.add(f"I{M_FIRST}:I{M_LAST}", DataBarRule(
     start_type="num", start_value=0, end_type="num", end_value=1, color="E76F51"))
 mon.freeze_panes = "D5"
-mon.auto_filter.ref = f"A4:N{M_LAST}"
+mon.auto_filter.ref = f"A4:O{M_LAST}"
 
 cats_ref = Reference(mon, min_col=3, min_row=M_FIRST, max_row=M_LAST)
 ch = line_chart("💰 Доход по месяцам: план vs факт", "₸", height=9, width=26)
 ch.add_data(Reference(mon, min_col=4, max_col=5, min_row=4, max_row=M_LAST), titles_from_data=True)
 ch.set_categories(cats_ref)
 color_series(ch, [C["plan_head"], C["fact_head"]], dashed=[0])
-mon.add_chart(ch, "P4")
+mon.add_chart(ch, "Q4")
 
 ch = line_chart("💸 Расход по месяцам: план vs факт", "₸", height=9, width=26)
 ch.add_data(Reference(mon, min_col=7, max_col=8, min_row=4, max_row=M_LAST), titles_from_data=True)
 ch.set_categories(cats_ref)
 color_series(ch, ["F4A261", C["neg"]], dashed=[0])
-mon.add_chart(ch, "P23")
+mon.add_chart(ch, "Q23")
 
 ch = line_chart("🏦 Накопленный остаток: план vs факт", "₸", height=9, width=26)
 ch.add_data(Reference(mon, min_col=12, max_col=13, min_row=4, max_row=M_LAST), titles_from_data=True)
 ch.set_categories(cats_ref)
 color_series(ch, [C["year"], C["inc"]], dashed=[0])
-mon.add_chart(ch, "P42")
+mon.add_chart(ch, "Q42")
 
 # ---------------------------------------------------------------- ПО ГОДАМ
 YEAR_HEAD = ["📆 Год", "💰 Доход\nПЛАН", "💰 Доход\nФАКТ", "% дохода\nполучено", "💸 Расход\nПЛАН",
@@ -535,7 +709,7 @@ for i, y in enumerate(YEARS):
     yr.cell(r, 3, f"=SUMIFS(inc_fact,inc_year,A{r})")
     yr.cell(r, 4, f'=IF(B{r}=0,"",C{r}/B{r})')
     yr.cell(r, 5, f'=SUMIFS(exp_plan,exp_year,A{r},exp_status,"<>{CANCEL_EXP}")')
-    yr.cell(r, 6, f"=SUMIFS(exp_fact,exp_year,A{r})")
+    yr.cell(r, 6, f"=SUMIFS(exp_fact,exp_year,A{r})+SUMIFS(day_amt,day_year,A{r},day_inplan,0)")
     yr.cell(r, 7, f'=IF(E{r}=0,"",F{r}/E{r})')
     yr.cell(r, 8, f"=B{r}-E{r}")
     yr.cell(r, 9, f"=C{r}-F{r}")
@@ -609,7 +783,8 @@ for i in range(N_CAT):
     col = 2
     for y in YEARS:
         yr.cell(r, col, f'=IF($A{r}="","",SUMIFS(exp_plan,exp_cat,$A{r},exp_year,{y},exp_status,"<>{CANCEL_EXP}"))')
-        yr.cell(r, col + 1, f'=IF($A{r}="","",SUMIFS(exp_fact,exp_cat,$A{r},exp_year,{y}))')
+        yr.cell(r, col + 1, f'=IF($A{r}="","",SUMIFS(exp_fact,exp_cat,$A{r},exp_year,{y})'
+                            f'+SUMIFS(day_amt,day_cat,$A{r},day_year,{y},day_inplan,0))')
         col += 2
     plan_cells = ",".join(f"{get_column_letter(2 + 2 * k)}{r}" for k in range(len(YEARS)))
     fact_cells = ",".join(f"{get_column_letter(3 + 2 * k)}{r}" for k in range(len(YEARS)))
@@ -811,7 +986,7 @@ home.conditional_formatting.add("E12", DataBarRule(
 
 # Навигация
 block_title(10, 7, "🧭 Навигация", C["home"])
-nav = [(S_EXP, "вносить траты (план и факт)"), (S_INC, "вносить доходы (план и факт)"),
+nav = [(S_EXP, "планировать траты (план и факт)"), (S_DAY, "записывать каждую покупку"), (S_INC, "вносить доходы (план и факт)"),
        (S_MON, "сводка по месяцам + графики"), (S_YEAR, "сводка по годам и категориям"),
        (S_WISH, "список хотелок и мечт"), (S_REF, "справочник для выпадающих списков")]
 for i, (sh, desc) in enumerate(nav):
@@ -831,7 +1006,8 @@ legend = [
     ("FFFFFF", "Листы «По месяцам», «По годам», «Хотелки» и «Главная» считаются сами — в них ничего вводить не нужно."),
     ("FFFFFF", "В листах «Расходы» и «Доходы» есть строки-ПРИМЕРЫ — замените или удалите их."),
     ("2E9E5B", "🟢 Зелёные вкладки — ВИТРИНЫ: Главная, По месяцам, По годам, Хотелки. Только смотреть."),
-    ("D62839", "🔴 Красные вкладки — ТЕХНИЧЕСКИЕ: Расходы, Доходы, Справочник. Здесь вводятся данные."),
+    ("D62839", "🔴 Красные вкладки — ТЕХНИЧЕСКИЕ: Расходы, Дневник трат, Доходы, Справочник. Здесь вводятся данные."),
+    ("FFF1EC", "🧾 Дневник трат: записывайте каждую покупку. По статье из плана → ФАКТ в «Расходах», иначе → «⚡ вне плана»."),
     (C["input_fill"], "🗓 На Главной выберите год и месяц в жёлтых ячейках H4:I4 — блок покажет этот месяц."),
 ]
 for i, (bg, text) in enumerate(legend):
@@ -869,7 +1045,7 @@ home.add_chart(ch, "G31")
 TAB_SHOW, TAB_TECH = "2E9E5B", "D62839"
 for ws_ in (home, mon, yr, wish):
     ws_.sheet_properties.tabColor = TAB_SHOW
-for ws_ in (exp, inc, ref):
+for ws_ in (exp, day, inc, ref):
     ws_.sheet_properties.tabColor = TAB_TECH
 
 wb.active = 0
