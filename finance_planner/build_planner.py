@@ -116,12 +116,16 @@ def style_range(ws, r1, r2, c1, c2, *, fmt=None, bg=None, align=None, fnt=None):
                 cell.alignment = Alignment(horizontal=align, vertical="center")
 
 
+NAME_REFS = {}
+
+
 def add_name(wb, name, sheet, ref):
+    NAME_REFS[name] = f"{q(sheet)}!{ref}"
     wb.defined_names[name] = DefinedName(name, attr_text=f"{q(sheet)}!{ref}")
 
 
 def add_list_validation(ws, rng, source, prompt=None):
-    dv = DataValidation(type="list", formula1=f"={source}", allow_blank=True)
+    dv = DataValidation(type="list", formula1=NAME_REFS.get(source, source), allow_blank=True)
     dv.error = "Выберите значение из списка (его можно дополнить в листе «📚 Справочник»)"
     dv.errorTitle = "Значение не из справочника"
     dv.showErrorMessage = True
@@ -492,6 +496,7 @@ mon.conditional_formatting.add(f"I{M_FIRST}:I{M_LAST}", CellIsRule(
 mon.conditional_formatting.add(f"I{M_FIRST}:I{M_LAST}", DataBarRule(
     start_type="num", start_value=0, end_type="num", end_value=1, color="E76F51"))
 mon.freeze_panes = "D5"
+mon.auto_filter.ref = f"A4:N{M_LAST}"
 
 cats_ref = Reference(mon, min_col=3, min_row=M_FIRST, max_row=M_LAST)
 ch = line_chart("💰 Доход по месяцам: план vs факт", "₸", height=9, width=26)
@@ -702,6 +707,7 @@ wish.conditional_formatting.add(wr, FormulaRule(
 wish.conditional_formatting.add("D4", DataBarRule(
     start_type="num", start_value=0, end_type="num", end_value=1, color="FF5D8F"))
 wish.freeze_panes = "C7"
+wish.auto_filter.ref = f"A6:I{W_LAST}"
 
 # ---------------------------------------------------------------- ГЛАВНАЯ
 title(home, "🏠 Финансовый план 2026 – 2030",
@@ -741,9 +747,21 @@ for i, (lbl, p, f) in enumerate(kpi):
         home.cell(r, c).border = BORDER
     home.row_dimensions[r].height = 22
 
-# KPI: текущий месяц
-block_title(4, 7, "🗓 Текущий месяц", C["mon"])
-home.cell(4, 9, '=INDEX(lst_months,MONTH(TODAY()))&" "&YEAR(TODAY())').font = font(11, True, C["mon"])
+# KPI: выбранный месяц (по умолчанию — текущий)
+SEL_Y = 'IF($H$4="",YEAR(TODAY()),$H$4)'
+SEL_M = 'IF($I$4="",MONTH(TODAY()),MATCH($I$4,lst_months,0))'
+block_title(4, 7, "🗓 Месяц ▸", C["mon"])
+for addr, src, hint in (("H4", "lst_years", "Год (пусто = текущий)"),
+                        ("I4", "lst_months", "Месяц (пусто = текущий)")):
+    cell = home[addr]
+    cell.fill = fill(C["input_fill"])
+    cell.border = Border(left=thin, right=thin, top=thin, bottom=Side(style="medium", color=C["mon"]))
+    cell.font = Font(name=FONT, size=11, bold=True, color="0000FF")
+    cell.alignment = Alignment(horizontal="center")
+    add_list_validation(home, addr, src, prompt=f"{hint}. Выберите из списка.")
+home["J4"] = ('=IF(AND(H4="",I4=""),"⏱ текущий: ","")&INDEX(lst_months,SEL_M)&" "&SEL_Y')
+home["J4"].value = home["J4"].value.replace("SEL_Y", SEL_Y).replace("SEL_M", SEL_M)
+home["J4"].font = font(9, True, C["mon"])
 for j, h in enumerate(["", "📝 ПЛАН", "✅ ФАКТ", "% выполнения"]):
     cell = home.cell(5, 7 + j, h)
     cell.font = Font(name=FONT, bold=True, color="FFFFFF")
@@ -751,13 +769,13 @@ for j, h in enumerate(["", "📝 ПЛАН", "✅ ФАКТ", "% выполнен�
     cell.alignment = Alignment(horizontal="center")
 MN = f"{q(S_MON)}!"
 # позиция текущего месяца в листе «По месяцам»
-pos = f"((YEAR(TODAY())-{YEARS[0]})*12+MONTH(TODAY()))"
+pos = f"((SEL_Y-{YEARS[0]})*12+SEL_M)"
 mkpi = [("💰 Доходы", "D", "E"), ("💸 Расходы", "G", "H"), ("⚖️ Остаток", "J", "K")]
 for i, (lbl, pc, fc) in enumerate(mkpi):
     r = 6 + i
     home.cell(r, 7, lbl).font = font(11, True)
-    home.cell(r, 8, f'=IFERROR(INDEX({MN}${pc}${M_FIRST}:${pc}${M_LAST},{pos}),0)')
-    home.cell(r, 9, f'=IFERROR(INDEX({MN}${fc}${M_FIRST}:${fc}${M_LAST},{pos}),0)')
+    home.cell(r, 8, f'=IFERROR(INDEX({MN}${pc}${M_FIRST}:${pc}${M_LAST},{pos}),0)'.replace("SEL_Y", SEL_Y).replace("SEL_M", SEL_M))
+    home.cell(r, 9, f'=IFERROR(INDEX({MN}${fc}${M_FIRST}:${fc}${M_LAST},{pos}),0)'.replace("SEL_Y", SEL_Y).replace("SEL_M", SEL_M))
     home.cell(r, 10, f'=IF(H{r}=0,"",I{r}/H{r})')
     home.cell(r, 8).fill = fill(C["plan_fill"])
     home.cell(r, 9).fill = fill(C["fact_fill"])
@@ -812,6 +830,9 @@ legend = [
     (C["today"], "Жёлтая строка в «По месяцам» — текущий месяц. Красный шрифт — перерасход или минус."),
     ("FFFFFF", "Листы «По месяцам», «По годам», «Хотелки» и «Главная» считаются сами — в них ничего вводить не нужно."),
     ("FFFFFF", "В листах «Расходы» и «Доходы» есть строки-ПРИМЕРЫ — замените или удалите их."),
+    ("2E9E5B", "🟢 Зелёные вкладки — ВИТРИНЫ: Главная, По месяцам, По годам, Хотелки. Только смотреть."),
+    ("D62839", "🔴 Красные вкладки — ТЕХНИЧЕСКИЕ: Расходы, Доходы, Справочник. Здесь вводятся данные."),
+    (C["input_fill"], "🗓 На Главной выберите год и месяц в жёлтых ячейках H4:I4 — блок покажет этот месяц."),
 ]
 for i, (bg, text) in enumerate(legend):
     r = 19 + i
@@ -836,13 +857,20 @@ ch = line_chart("💰 Доход по месяцам: план vs факт", "�
 ch.add_data(Reference(mon, min_col=4, max_col=5, min_row=4, max_row=M_LAST), titles_from_data=True)
 ch.set_categories(cats_ref)
 color_series(ch, [C["plan_head"], C["fact_head"]], dashed=[0])
-home.add_chart(ch, "B27")
+home.add_chart(ch, "B31")
 ch = line_chart("📈 Доход и расход по годам (план/факт)", "₸", height=8, width=17)
 ch.add_data(Reference(yr, min_col=2, max_col=3, min_row=4, max_row=Y_LAST), titles_from_data=True)
 ch.add_data(Reference(yr, min_col=5, max_col=6, min_row=4, max_row=Y_LAST), titles_from_data=True)
 ch.set_categories(ych_cats)
 color_series(ch, [C["plan_head"], C["fact_head"], "F4A261", C["neg"]], dashed=[0, 2])
-home.add_chart(ch, "G27")
+home.add_chart(ch, "G31")
+
+# Цвета вкладок: зелёный — витрины (смотреть), красный — технические (вводить/настраивать)
+TAB_SHOW, TAB_TECH = "2E9E5B", "D62839"
+for ws_ in (home, mon, yr, wish):
+    ws_.sheet_properties.tabColor = TAB_SHOW
+for ws_ in (exp, inc, ref):
+    ws_.sheet_properties.tabColor = TAB_TECH
 
 wb.active = 0
 wb.save(OUT)
